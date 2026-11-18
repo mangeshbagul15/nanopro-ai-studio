@@ -28,6 +28,29 @@ _SAMPLE_WORD = re.compile(
 _ALL_TABLES = re.compile(r"\ball\b|saglya|सगळ्या|सर्व|pratyek|प्रत्येक|each", re.IGNORECASE)
 _COUNT = re.compile(r"(\d{1,4})\s*(?:sample\s+)?(?:records?|rows?|रिकॉर्ड|ओळी)", re.IGNORECASE)
 
+# Plain-language data questions ("GAM मध्ये किती accounts आहेत?") are answered
+# from BigQuery instead of the LLM, so the numbers are always real.
+_COUNT_Q = re.compile(r"(?<!\w)किती(?!\w)|कितीत|how\s+many|\bcounts?\b", re.IGNORECASE)
+_SHOW_Q = re.compile(
+    r"दाखव|बघ|पहा|\bshow\b|\blist\b|\btop\b|सर्वात|highest|largest|biggest", re.IGNORECASE
+)
+_TOPN_Q = re.compile(
+    r"\btop\s*(\d{1,3})\b|(\d{1,3})\s*(?:accounts?|records?|rows?|transactions?|रिकॉर्ड|ओळी)",
+    re.IGNORECASE,
+)
+_HIGH_Q = re.compile(r"सर्वात\s*(?:जास्त|मोठ)|highest|largest|biggest|\bmax\b", re.IGNORECASE)
+_LATEST_Q = re.compile(r"शेवटच|latest|recent|\blast\b|नवीन", re.IGNORECASE)
+_LIST_Q = re.compile(r"\btables?\b|तक्त|यादी", re.IGNORECASE)
+
+# When the question does not name a table, answer from the obvious one instead
+# of letting the LLM invent numbers.
+_TABLE_HINTS = [
+    (re.compile(r"accounts?|खात", re.IGNORECASE), "GAM"),
+    (re.compile(r"transactions?|txn|व्यवहार", re.IGNORECASE), "HTD"),
+    (re.compile(r"customers?|ग्राहक", re.IGNORECASE), "CMG"),
+    (re.compile(r"branch|शाखा", re.IGNORECASE), "SOL"),
+]
+
 # Schema changes belong to the DDL handler; returning None keeps them on that path.
 _SCHEMA_CHANGE = re.compile(r"^\s*(create|alter|drop|truncate|merge|grant|revoke)\b", re.IGNORECASE)
 
@@ -590,6 +613,129 @@ def _handle_sql(sql: str) -> Dict[str, Any]:
     )
 
 
+def _pick_column(names: List[str], prompt: str) -> str:
+    lowered = prompt.lower()
+    best, score = "", 0
+    for name in names:
+        tokens = [token for token in re.split(r"[^A-Z0-9]+", name.upper()) if len(token) >= 3]
+        hits = sum(1 for token in tokens if token.lower() in lowered)
+        if hits > score:
+            best, score = name, hits
+    return best or (names[0] if names else "")
+
+
+def _count_answer(client: Any, schema: str, tables: List[str], started: float,
+                  listing: bool = False) -> Dict[str, Any]:
+    unions = " UNION ALL ".join(
+        f"SELECT '{table}' AS table_name, COUNT(*) AS rows "
+        f"FROM `{client.project}.{schema}.{table}`"
+        for table in tables
+    )
+    result = _run_statement(unions, limit=max(len(tables), 1))
+    rows = result["rows"]
+    total = sum(int(row.get("rows") or 0) for row in rows)
+    title = "अशा tables आणि त्यांचे live row counts आहेत" if listing else "live counts"
+    markdown = "\n".join([
+        f"### 🔢 `{schema}` — {title}",
+        "",
+        _render_rows(result["columns"], rows, False),
+        "",
+        f"_एकूण {total} rows · {result['duration_ms']} ms · BigQuery लाइव्ह._",
+    ])
+    return _payload(
+        "run_query",
+        markdown,
+        f"{total} rows across {len(rows)} tables",
+        {"kind": "rows", "columns": result["columns"], "rows": rows,
+         "row_count": len(rows), "statement": unions,
+         "duration_ms": result["duration_ms"]},
+        started,
+    )
+
+
+def _preview_answer(client: Any, schema: str, table: str, prompt: str,
+                    started: float) -> Dict[str, Any]:
+    from app.core.catalog_admin import _table_state
+
+    columns = _table_state(client, schema, table)["columns"]
+    numerics = [c["name"] for c in columns if _base_type(c["type"]) in _NUM_TYPES]
+    integers = [c["name"] for c in columns if _base_type(c["type"]) in _INT_TYPES]
+    dates = [c["name"] for c in columns
+             if _base_type(c["type"]) in ("DATE", "DATETIME", "TIMESTAMP")]
+
+    limit = 10
+    top = _TOPN_Q.search(prompt)
+    if top:
+        limit = max(1, min(int(top.group(1) or top.group(2)), 100))
+
+    order = ""
+    if _HIGH_Q.search(prompt):
+        column = _pick_column(numerics + integers, prompt)
+        if column:
+            order = f" ORDER BY `{column}` DESC"
+    elif _LATEST_Q.search(prompt) and dates:
+        column = _pick_column(dates, prompt)
+        if column:
+            order = f" ORDER BY `{column}` DESC"
+
+    statement = f"SELECT * FROM `{client.project}.{schema}.{table}`{order} LIMIT {limit}"
+    result = _run_statement(statement, limit=limit)
+    sort_note = f", `{order.split('`')[1]}` नुसार उतरत्या क्रमाने" if order else ""
+    markdown = "\n".join([
+        f"### 📄 `{table}` — {len(result['rows'])} rows{sort_note}",
+        "",
+        _render_rows(result["columns"], result["rows"], False),
+        "",
+        f"_`{statement}` · {result['duration_ms']} ms · BigQuery लाइव्ह._",
+    ])
+    return _payload(
+        "run_query",
+        markdown,
+        f"{len(result['rows'])} rows from {table}",
+        result,
+        started,
+    )
+
+
+def _answer_question(prompt: str) -> Optional[Dict[str, Any]]:
+    """Answers a plain-language data question from the live tables, or None."""
+    from app.core.catalog_admin import CatalogError
+
+    if not (_COUNT_Q.search(prompt) or _SHOW_Q.search(prompt) or _LIST_Q.search(prompt)):
+        return None
+
+    started = time.time()
+    try:
+        client, _ = _client()
+        schema = _schema_from_prompt(prompt, client)
+        tables = _target_tables(prompt, schema, client)
+        if not tables:
+            available = set(_table_list(client, schema))
+            for pattern, name in _TABLE_HINTS:
+                if name in available and pattern.search(prompt):
+                    tables = [name]
+                    break
+
+        if _COUNT_Q.search(prompt):
+            if not tables:
+                if not (_ALL_TABLES.search(prompt) or _LIST_Q.search(prompt)):
+                    return None
+                tables = _table_list(client, schema)
+            return _count_answer(client, schema, tables, started,
+                                 listing=bool(_ALL_TABLES.search(prompt)))
+        if not tables and _LIST_Q.search(prompt) and re.search(
+            r"यादी|\blist\b|किती|how\s+many", prompt, re.IGNORECASE
+        ):
+            return _count_answer(client, schema, _table_list(client, schema), started, listing=True)
+        if not tables or not _SHOW_Q.search(prompt):
+            return None
+        return _preview_answer(client, schema, tables[0], prompt, started)
+    except CatalogError as exc:
+        return _error(str(exc), started)
+    except Exception as exc:
+        return _error(f"{type(exc).__name__}: {str(exc)[:500]}", started)
+
+
 def maybe_handle(prompt: str) -> Optional[Dict[str, Any]]:
     text = (prompt or "").strip()
     if not text:
@@ -616,4 +762,4 @@ def maybe_handle(prompt: str) -> Optional[Dict[str, Any]]:
     ):
         return _handle_sql(text)
 
-    return None
+    return _answer_question(text)
