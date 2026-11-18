@@ -34,6 +34,12 @@ EXCLUDED_DATASETS = {"nanopro_studio"}
 
 _CAPS_CACHE: Dict[str, Any] = {"at": 0.0, "value": None}
 _CAPS_TTL = 300.0
+_LAST_RUN: Dict[str, Any] = {}
+
+
+def last_run() -> Dict[str, Any]:
+    """Most recent export outcome, whichever lane triggered it."""
+    return dict(_LAST_RUN)
 
 
 def _now() -> str:
@@ -297,6 +303,42 @@ def capabilities(force: bool = False) -> Dict[str, Any]:
 
 def run_pipeline(datasets: Optional[List[str]] = None) -> Dict[str, Any]:
     """Export every BigQuery dataset (or the given subset) to S3 as Parquet."""
+    started = time.time()
+    started_at = _now()
+    try:
+        payload = _export(datasets)
+    except Exception as exc:
+        _LAST_RUN.clear()
+        _LAST_RUN.update({
+            "status": "error",
+            "summary": str(exc)[:300],
+            "started_at": started_at,
+            "finished_at": _now(),
+        })
+        raise
+
+    _LAST_RUN.clear()
+    _LAST_RUN.update({
+        "run_id": payload.get("run_id"),
+        "status": payload.get("status"),
+        "summary": payload.get("summary"),
+        "tables": len(payload.get("tables") or []),
+        "rows": payload.get("rows"),
+        "bytes": payload.get("bytes"),
+        "datasets": [d.get("dataset") for d in payload.get("datasets") or [] if d.get("dataset")],
+        "services": {
+            name: item.get("status")
+            for name, item in (payload.get("aws_services") or {}).items()
+            if isinstance(item, dict)
+        },
+        "started_at": started_at,
+        "finished_at": _now(),
+        "duration_s": round(time.time() - started, 2),
+    })
+    return payload
+
+
+def _export(datasets: Optional[List[str]] = None) -> Dict[str, Any]:
     started = time.time()
     run_id = _run_id()
     config = _aws_config()

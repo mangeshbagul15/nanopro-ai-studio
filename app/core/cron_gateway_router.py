@@ -223,6 +223,25 @@ async def cron_eod_trigger(request: Request):
         _record_cron_run("EOD_06PM", "ERROR", {"error": str(e)})
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
+@router.get("/bigquery_to_aws/status")
+async def cron_bigquery_to_aws_status():
+    """Read-only proof of the automation: last export run and scheduler state."""
+    from app.core.bigquery_aws_pipeline import last_run
+    from app.core.bq_export_scheduler import STATE, _enabled, _interval_seconds
+
+    return JSONResponse(content={
+        "status": "ONLINE",
+        "scheduler": {
+            "armed": bool(STATE.get("armed")),
+            "enabled": _enabled(),
+            "interval_min": _interval_seconds() // 60,
+            "last_attempt": STATE.get("last_attempt"),
+        },
+        "last_run": last_run(),
+        "recent_executions": [r for r in CRON_AUDIT_LOGS if str(r.get("job_name", "")).startswith("BQ2AWS")][:10],
+    })
+
+
 @router.get("/bigquery_to_aws")
 @router.post("/bigquery_to_aws")
 async def cron_bigquery_to_aws(request: Request):

@@ -173,16 +173,17 @@ class BigQueryAwsPipelineTests(unittest.TestCase):
             result = pipeline.run_pipeline()
 
         self.assertEqual(result["status"], "success")
-        self.assertEqual(len(result["tables"]), 3)
-        self.assertEqual(result["rows"], 30)
+        self.assertEqual(len(result["tables"]), 2)
+        self.assertEqual(result["rows"], 20)
         self.assertEqual(result["s3"]["prefix"], "s3://nanopro-data-lake/bronze/bigquery/")
         self.assertEqual(result["aws_services"]["sqs"]["status"], "sent")
         self.assertEqual(result["aws_services"]["dynamodb"]["status"], "recorded")
         self.assertEqual(result["aws_services"]["cloudwatch"]["status"], "published")
         self.assertEqual(result["aws_services"]["glue"]["status"], "registered")
-        self.assertEqual(result["aws_services"]["glue"]["tables"], 3)
+        self.assertEqual(result["aws_services"]["glue"]["tables"], 2)
         prefixes = {item[2] for item in exported}
-        self.assertEqual(prefixes, {"bronze/bigquery/nanopro_cbs_bronze", "bronze/bigquery/nanopro_studio"})
+        self.assertEqual(prefixes, {"bronze/bigquery/nanopro_cbs_bronze"})
+        self.assertNotIn("nanopro_studio", {item[0] for item in exported})
 
     def test_register_catalog_maps_types_and_locations(self):
         cfg = {"access_key": "a", "secret_key": "b", "region": "ap-southeast-2", "bucket": "nanopro-data-lake"}

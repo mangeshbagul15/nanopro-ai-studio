@@ -541,7 +541,7 @@ class AutomationScheduler:
         if name in ("bigquery_aws_pipeline_daily", "bigquery_aws_pipeline", "bigquery_to_aws"):
             from app.core.bigquery_aws_pipeline import run_pipeline
             res = run_pipeline()
-            return json.dumps(res, default=str), "", 0 if res.get("success") else 1
+            return json.dumps(res, default=str), "", 0 if res.get("status") in ("success", "partial") else 1
         if name == "connection_interoperability_test":
             from app.core.connection_manager import connection_manager
             res = connection_manager.test_cross_pipeline_interoperability()

@@ -12,7 +12,8 @@ import time
 from app.core.logger import log_event
 
 _STARTED = threading.Event()
-DEFAULT_INTERVAL_MIN = 30
+DEFAULT_INTERVAL_MIN = 60
+STATE: dict = {"armed": False, "interval_min": DEFAULT_INTERVAL_MIN, "last_attempt": None}
 
 
 def _enabled() -> bool:
@@ -35,11 +36,24 @@ def _loop() -> None:
                 from app.core.bigquery_aws_pipeline import run_pipeline
 
                 result = run_pipeline()
+                STATE["last_attempt"] = time.time()
                 log_event(
                     f"[BQExport] {result.get('status')}: {result.get('summary')}",
                     component="BQExportScheduler",
                 )
+                try:
+                    from app.core.cron_gateway_router import _record_cron_run
+
+                    job_key = "BQ2AWS_SCHED_" + str(result.get("run_id") or "")
+                    _record_cron_run(job_key, str(result.get("status") or "").upper(), {
+                        "summary": result.get("summary"),
+                        "tables": len(result.get("tables") or []),
+                        "rows": result.get("rows"),
+                    })
+                except Exception:
+                    pass
             except Exception as exc:
+                STATE["last_attempt"] = time.time()
                 log_event(f"[BQExport] run failed: {exc}", level="WARNING", component="BQExportScheduler")
         time.sleep(_interval_seconds())
 
@@ -48,5 +62,7 @@ def start() -> None:
     if not _enabled() or _STARTED.is_set():
         return
     _STARTED.set()
+    STATE["armed"] = True
+    STATE["interval_min"] = _interval_seconds() // 60
     threading.Thread(target=_loop, daemon=True, name="bq-export-scheduler").start()
     log_event(f"[BQExport] scheduler armed, every {_interval_seconds() // 60} minutes.", component="BQExportScheduler")
