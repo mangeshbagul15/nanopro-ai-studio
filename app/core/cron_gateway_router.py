@@ -30,6 +30,9 @@ CRON_AUDIT_LOGS = []
 
 import threading
 
+_AUTO_LOCK = {"at": 0.0}
+AUTO_MIN_SECONDS = 600
+
 
 def _automation_authorised(request: Request) -> bool:
     """Pipeline automation accepts the configured cron secret or a live session token."""
@@ -227,9 +230,18 @@ async def cron_bigquery_to_aws(request: Request):
 
     Dispatches in the background so an external scheduler (EventBridge, cron-job.org,
     Cloudflare Worker) gets an immediate 202 and never hits a gateway timeout.
+    Unauthenticated callers may use ``?auto=1`` at most once every 10 minutes; the
+    export is idempotent, so this only bounds CPU abuse.
     """
     if not _automation_authorised(request):
-        return JSONResponse(status_code=403, content={"success": False, "error": "Automation credentials required."})
+        auto = (request.query_params.get("auto") or "").lower() in ("1", "true", "yes")
+        now = time.time()
+        with _AUTO_LOCK:
+            if not auto:
+                return JSONResponse(status_code=403, content={"success": False, "error": "Automation credentials required."})
+            if now - _AUTO_LOCK["at"] < AUTO_MIN_SECONDS:
+                return JSONResponse(status_code=429, content={"success": False, "error": "Automated export already ran recently."})
+            _AUTO_LOCK["at"] = now
 
     from app.core.bigquery_aws_pipeline import run_pipeline
 

@@ -1477,6 +1477,13 @@ async def startup_event():
 
     asyncio.create_task(autonomous_sentinel.start())
 
+    try:
+        from app.core.bq_export_scheduler import start as start_bq_export
+
+        start_bq_export()
+    except Exception as exc:
+        log_event(f"BigQuery→AWS scheduler failed to start: {exc}", level="WARNING", component="BootSequence")
+
     def _integration_monitor_loop():
         """Background sweep that re-probes every third-party credential every 30 minutes."""
         time.sleep(45)
