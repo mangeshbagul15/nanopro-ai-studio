@@ -25,12 +25,22 @@ _INSERT_VERB = re.compile(r"\binsert\b|भरा|भरून|टाका|घ�
 _SAMPLE_WORD = re.compile(
     r"sample|records?|rows?|data|नमुना|डेटा|रिकॉर्ड|ओळी", re.IGNORECASE
 )
-_ALL_TABLES = re.compile(r"\ball\b|saglya|सगळ्या|सर्व|pratyek|प्रत्येक|each", re.IGNORECASE)
+# \b and \w ignore Devanagari matras (Mn), so word edges are matched against
+# the script range itself: "सर्व" must not fire inside "सर्वात" (highest).
+_DEVANAGARI = "\u0900-\u097F"
+_ALL_TABLES = re.compile(
+    rf"\ball\b|saglya|सगळ्या|(?<![{_DEVANAGARI}])सर्व(?![{_DEVANAGARI}])"
+    rf"|pratyek|प्रत्येक|each",
+    re.IGNORECASE,
+)
 _COUNT = re.compile(r"(\d{1,4})\s*(?:sample\s+)?(?:records?|rows?|रिकॉर्ड|ओळी)", re.IGNORECASE)
 
 # Plain-language data questions ("GAM मध्ये किती accounts आहेत?") are answered
 # from BigQuery instead of the LLM, so the numbers are always real.
-_COUNT_Q = re.compile(r"(?<!\w)किती(?!\w)|कितीत|how\s+many|\bcounts?\b", re.IGNORECASE)
+_COUNT_Q = re.compile(
+    rf"(?<![{_DEVANAGARI}])किती(?![{_DEVANAGARI}])|कितीत|how\s+many|\bcounts?\b",
+    re.IGNORECASE,
+)
 _SHOW_Q = re.compile(
     r"दाखव|बघ|पहा|\bshow\b|\blist\b|\btop\b|सर्वात|highest|largest|biggest", re.IGNORECASE
 )
