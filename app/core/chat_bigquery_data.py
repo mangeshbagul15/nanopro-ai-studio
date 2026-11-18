@@ -148,31 +148,6 @@ def _scalar(name: str, type_sql: str, index: int) -> Any:
     return f"{re.sub(r'[^A-Z0-9]', '', upper)[:8] or 'VAL'}{index:05d}"
 
 
-def _literal(value: Any, type_sql: str) -> str:
-    base = _base_type(type_sql)
-    if value is None:
-        return "NULL"
-    if base in _BOOL_TYPES:
-        return "TRUE" if value else "FALSE"
-    if base in _INT_TYPES or base in _NUM_TYPES:
-        return str(value)
-    if base == "DATE":
-        return f"DATE '{value}'"
-    if base == "DATETIME":
-        return f"DATETIME '{value}'"
-    if base == "TIMESTAMP":
-        return f"TIMESTAMP '{value}'"
-    if base == "TIME":
-        return f"TIME '{value}'"
-    if base == "JSON":
-        return f"JSON '{value}'"
-    if base == "BYTES":
-        return f"b'{value}'"
-    if base == "GEOGRAPHY":
-        return f"ST_GEOGPOINT({value[0]}, {value[1]})"
-    return "'" + str(value).replace("\\", "\\\\").replace("'", "\\'") + "'"
-
-
 def _table_list(client: Any, schema: str) -> List[str]:
     try:
         return sorted(item.table_id for item in client.list_tables(schema))
@@ -289,17 +264,34 @@ def _table_rows(client: Any, schema: str, table: str, count: int,
     return rows
 
 
+def _json_value(value: Any, type_sql: str) -> Any:
+    base = _base_type(type_sql)
+    if base == "GEOGRAPHY" and isinstance(value, (tuple, list)):
+        return f"POINT({value[0]} {value[1]})"
+    if base == "BYTES" and isinstance(value, str):
+        import base64
+
+        return base64.b64encode(value.encode()).decode()
+    return value
+
+
 def _insert(client: Any, schema: str, table: str, rows: List[Dict[str, Any]],
             column_types: Dict[str, str]) -> None:
-    columns = list(rows[0].keys())
-    column_sql = ", ".join(f"`{name}`" for name in columns)
-    tuples = [
-        "(" + ", ".join(_literal(row[name], column_types[name]) for name in columns) + ")"
+    from google.cloud import bigquery
+
+    payload = [
+        {name: _json_value(value, column_types[name]) for name, value in row.items()}
         for row in rows
     ]
-    client.query(
-        f"INSERT INTO `{client.project}.{schema}.{table}` ({column_sql}) VALUES " + ", ".join(tuples)
-    ).result(timeout=600)
+    # The sandbox project rejects INSERT/UPDATE/DELETE (billing not enabled),
+    # so rows go in through a load job instead of DML.
+    job_config = bigquery.LoadJobConfig(write_disposition=bigquery.WriteDisposition.WRITE_APPEND)
+    job = client.load_table_from_json(
+        payload, f"{client.project}.{schema}.{table}", job_config=job_config
+    )
+    job.result(timeout=600)
+    if job.errors:
+        raise RuntimeError(f"{table}: {job.errors[0].get('message', 'load job failed')}")
 
 
 def _column_types(client: Any, schema: str, table: str) -> Dict[str, str]:
@@ -494,7 +486,14 @@ def _handle_sql(sql: str) -> Dict[str, Any]:
     except CatalogError as exc:
         return _error(str(exc), started)
     except Exception as exc:
-        return _error(f"BigQuery error: {str(exc)[:400]}", started)
+        text = str(exc)
+        if "Billing has not been enabled" in text or "billingNotEnabled" in text:
+            return _error(
+                "हा BigQuery project sandbox आहे: Google ने INSERT/UPDATE/DELETE बंद ठेवले आहेत. "
+                "SELECT विचारता येतात, आणि sample rows load job ने टाकली जातात.",
+                started,
+            )
+        return _error(f"BigQuery error: {text[:400]}", started)
 
     if result["kind"] == "rows":
         markdown = "\n".join([

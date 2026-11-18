@@ -5986,9 +5986,9 @@ body.in-global_ai_lab .nano-dynamic-island {
         });
         execData = await execRes.json();
       }
-      assistantPlaceholder.remove();
 
       if (execData.status === "success") {
+        assistantPlaceholder.remove();
         // Real DDL from chat is executed by the backend against BigQuery.
         // Refresh from the live catalog instead of fabricating catalog nodes.
         if (execData.action === "CREATE_TABLE" || execData.action === "CREATE_SCHEMA") {
@@ -6094,7 +6094,23 @@ body.in-global_ai_lab .nano-dynamic-island {
         // picks up the server-side auto-title and real message counts.
         ailabSaveMessage(assistantMsg).then(() => ailabRefreshHistory());
       } else {
-        assistantPlaceholder.innerHTML = `<div class="ailab-bubble" style="color:#F87171;">⚠️ ${execData.message || "Failed to execute prompt."}</div>`;
+        // The backend answered but refused the operation. Keep the reply in
+        // the transcript instead of leaving an empty bubble behind.
+        assistantPlaceholder.remove();
+        const failMsg = {
+          id: "asst_" + Date.now(),
+          chat_id: AILAB.activeChatId,
+          role: "assistant",
+          content: execData.response || `⚠️ ${execData.message || "Failed to execute prompt."}`,
+          content_type: "markdown",
+          model_name: execData.model_name || "NanoPro",
+          flag: execData.flag || "⚠️",
+          created_at: Date.now() / 1000
+        };
+        AILAB.messages.push(failMsg);
+        container.appendChild(ailabCreateMessageNode(failMsg));
+        container.scrollTop = container.scrollHeight;
+        ailabSaveMessage(failMsg).then(() => ailabRefreshHistory());
       }
     } catch (err) {
       console.error("[AILAB Submit Error]", err);
