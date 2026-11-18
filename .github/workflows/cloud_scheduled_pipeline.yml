@@ -12,11 +12,10 @@ on:
         options:
           - BOD
           - SOD
+          - T1
           - FULL_LOAD
           - INCREMENTAL
           - EOD
-          - SFTP_INGEST
-          - SFTP_CLEANUP_20D
 
 jobs:
   cloud-pipeline-orchestrator:
@@ -38,8 +37,6 @@ jobs:
               CYCLE="INCREMENTAL"
             elif [ "$HOUR" -eq "12" ]; then
               CYCLE="EOD"
-            elif [ "$HOUR" -eq "18" ]; then
-              CYCLE="SFTP_CLEANUP_20D"
             else
               CYCLE="BOD"
             fi
@@ -51,23 +48,16 @@ jobs:
         run: |
           CYCLE="${{ steps.cycle_step.outputs.cycle }}"
           BASE_URL="https://nanopro-studio.onrender.com"
+          CRON_SECRET="${{ secrets.NANOPRO_CRON_SECRET }}"
           echo "Executing Autonomous Cloud Pipeline: $CYCLE via $BASE_URL"
-          
-          if [ "$CYCLE" = "SFTP_CLEANUP_20D" ]; then
-            echo "Enforcing SFTP 20-Day Retention Purge..."
-            RESPONSE=$(curl -s -X POST "$BASE_URL/api/sftp/cleanup" \
-              -H "Content-Type: application/json" \
-              -d '{"retention_days": 20, "purge_s3": true}' --max-time 120)
-            echo "SFTP Cleanup Response: $RESPONSE"
-          elif [ "$CYCLE" = "SFTP_INGEST" ]; then
-            echo "Processing Cloud SFTP Inbound Files..."
-            RESPONSE=$(curl -s -X POST "$BASE_URL/api/sftp/process-inbound" --max-time 180)
-            echo "SFTP Inbound Ingestion Response: $RESPONSE"
+          if [ "$CYCLE" = "FULL_LOAD" ] || [ "$CYCLE" = "INCREMENTAL" ]; then
+            RESPONSE=$(curl -s -X POST "$BASE_URL/api/cron/bigquery_to_aws" \
+              -H "X-Cron-Secret: $CRON_SECRET" --max-time 300)
           else
-            echo "Triggering Banking Pipeline Cycle: $CYCLE (AWS S3 -> Snowflake -> DuckDB -> Multi-Channel)..."
-            RESPONSE=$(curl -s -X POST "$BASE_URL/api/banking/trigger_cycle?cycle=$CYCLE" --max-time 300)
-            echo "Pipeline Response: $RESPONSE"
+            RESPONSE=$(curl -s -X POST "$BASE_URL/api/cron/pipeline/$CYCLE" \
+              -H "X-Cron-Secret: $CRON_SECRET" --max-time 300)
           fi
+          echo "Pipeline Response: $RESPONSE"
 
       - name: Verification & Health Ping
         run: |

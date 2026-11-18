@@ -85,8 +85,8 @@ def _defaults() -> Dict[str, Any]:
                   (os.environ.get("NANOPRO_ALERT_RECIPIENTS") or "").replace(";", ",").split(",")
                   if item.strip()]
     return {
-        "sender": (os.environ.get("NANOPRO_ALERT_SENDER") or "").strip(),
-        "recipients": recipients,
+        "sender": (os.environ.get("NANOPRO_ALERT_SENDER") or "mangeshbagul15@gmail.com").strip(),
+        "recipients": recipients or ["nanoproaistudio@gmail.com"],
         "telegram_channel": (os.environ.get("NANOPRO_TELEGRAM_CHAT") or "").strip(),
         "telegram_enabled": True,
         "whatsapp_number": (os.environ.get("NANOPRO_WHATSAPP_NUMBER") or "").strip(),

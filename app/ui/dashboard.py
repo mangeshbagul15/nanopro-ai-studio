@@ -12484,7 +12484,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <p style="font-size:12px; color:#94A3B8; margin:4px 0 0 0;">
 
-                         --  &bull; AWS S3 Lakehouse &harr; Snowflake BANK_DB &harr; Cloud SFTP Hub &harr; DuckDB Gold Marts &harr; Neon Cloud PostgreSQL.     Render Cloud + GitHub Actions  24/7  !
+                         --  &bull; AWS S3 Lakehouse &harr; Snowflake BANK_DB &harr; SFTP Landing (S3) &harr; DuckDB Gold Marts &harr; Neon Cloud PostgreSQL.     Render Cloud + GitHub Actions  24/7  !
 
                     </p>
 
@@ -12501,18 +12501,6 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
                     <button type="button" class="btn btn-secondary" onclick="runManualPipelineCycle('FULL_LOAD')" style="border-color:#38BDF8; color:#38BDF8; font-size:11.5px; padding:6px 12px;">
 
                         ⚡ Run Full Load (91 Tables)
-
-                    </button>
-
-                    <button type="button" class="btn btn-secondary" onclick="processSftpInboundUI()" style="border-color:#F59E0B; color:#F59E0B; font-size:11.5px; padding:6px 12px;">
-
-                        📥 Ingest SFTP Inbound
-
-                    </button>
-
-                    <button type="button" class="btn btn-secondary" onclick="enforceSftpRetentionUI()" style="border-color:#EC4899; color:#F472B6; font-size:11.5px; padding:6px 12px;">
-
-                        🧹 SFTP 20-Day Purge
 
                     </button>
 
@@ -12539,8 +12527,6 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
                     <span><strong style="color:#CBD5E1;">Snowflake DW:</strong> <span id="stripStatusSnowflake" style="color:#38BDF8;">● Ready (BANK_DB)</span></span>
 
                     <span><strong style="color:#CBD5E1;">AWS S3 Lakehouse:</strong> <span id="stripStatusS3" style="color:#F59E0B;">● Connected</span></span>
-
-                    <span><strong style="color:#CBD5E1;">Cloud SFTP (Port 2222):</strong> <span id="stripStatusSFTP" style="color:#34D399;">● Operational (20-Day Limit Active)</span></span>
 
                     <span><strong style="color:#CBD5E1;">DuckDB Gold Marts:</strong> <span id="stripStatusDuckDB" style="color:#A78BFA;">● S3 Synced (91 Tables)</span></span>
 
@@ -12625,42 +12611,6 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
                         <button type="button" class="btn btn-secondary" style="font-size:10.5px; padding:3px 8px; color:#F59E0B;" onclick="openDataLakeModal()">📁 Browse S3 Keys</button>
 
                         <button type="button" class="btn btn-secondary" style="font-size:10.5px; padding:3px 8px; color:#38BDF8;" onclick="backupDuckDbToS3UI()">☁️ S3 Lakehouse Sync</button>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-
-
-            <!-- 3. Enterprise Cloud SFTP Hub -->
-
-            <div class="panel-card" style="padding:14px; border:1px solid #10B981; background:rgba(15,23,42,0.9);">
-
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-
-                    <b style="color:#34D399; font-size:13.5px; display:flex; align-items:center; gap:6px;">📁 Cloud SFTP Gateway (Port 2222)</b>
-
-                    <span id="badgeDbSFTP" class="badge" style="background:#0F172A; color:#10B981; border:1px solid #10B981; font-size:10px;">OPERATIONAL</span>
-
-                </div>
-
-                <div style="margin-top:8px; font-size:11.5px; color:#CBD5E1; line-height:1.6;">
-
-                    <div><b>Host:</b> <code>0.0.0.0:2222</code> &bull; User: <code>nanopro_sftp</code> &bull; S3 Mirror Active</div>
-
-                    <div><b>Formats:</b> Pipe (|) Text &bull; CSV &bull; Excel (.xlsx)</div>
-
-                    <div><b>Retention Policy:</b> <span style="color:#F472B6; font-weight:700;">Strict 20-Day Limit</span> (Older auto-purged)</div>
-
-                    <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
-
-                        <button type="button" class="btn btn-secondary" style="font-size:10.5px; padding:3px 8px; color:#EC4899;" onclick="enforceSftpRetentionUI()">🧹 20D Purge</button>
-
-                        <button type="button" class="btn btn-secondary" style="font-size:10.5px; padding:3px 8px; color:#38BDF8;" onclick="generateSftpSamplesUI('credit_card')">📄 Sample Feeds</button>
-
-                        <button type="button" class="btn btn-secondary" style="font-size:10.5px; padding:3px 8px; color:#10B981;" onclick="processSftpInboundUI()">📥 Ingest Now</button>
 
                     </div>
 
@@ -12776,7 +12726,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
 
 
-        <!-- 3. INTERACTIVE MANUAL PIPELINE STUDIO & CUSTOM BUILDER -->
+        <!-- 3. MANUAL PIPELINE TRIGGER CONSOLE -->
 
         <div class="panel-card" style="margin-bottom:14px; padding:18px; border:1px solid #38BDF8; background:rgba(15,23,42,0.98);">
 
@@ -12786,13 +12736,13 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <h3 style="margin:0; font-size:15px; color:#38BDF8; display:flex; align-items:center; gap:8px;">
 
-                        <span>🚀</span> Interactive Manual Pipeline Studio &amp; Custom Builder
+                        <span>🚀</span> Manual Pipeline Triggers
 
                     </h3>
 
                     <p style="font-size:11.5px; color:#94A3B8; margin:3px 0 0 0;">
 
-                           Source, Target,  Project   Pipeline     .
+                        Real chain: BigQuery &rarr; S3 Bronze &rarr; Glue &rarr; Snowflake L0/L1/L2 &rarr; DuckDB &rarr; SFTP report + alerts. Runs in the background.
 
                     </p>
 
@@ -12802,7 +12752,7 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
 
-                    <button type="button" class="btn btn-primary" onclick="runManualPipelineCycle('FULL_LOAD')" style="font-size:11px; padding:5px 12px; background:#0284C7; font-weight:700;">⚡ Full Load (91 Tables)</button>
+                    <button type="button" class="btn btn-primary" onclick="runManualPipelineCycle('FULL_LOAD')" style="font-size:11px; padding:5px 12px; background:#0284C7; font-weight:700;">⚡ Full Load (all tables)</button>
 
                     <button type="button" class="btn btn-secondary" onclick="runManualPipelineCycle('INCREMENTAL')" style="font-size:11px; padding:5px 12px; color:#34D399; border-color:#059669;">⚡ Incremental (T-1 Delta)</button>
 
@@ -12810,167 +12760,19 @@ Select any model card above and click [⚡ Benchmark] to test real-time inferenc
 
                     <button type="button" class="btn btn-secondary" onclick="runManualPipelineCycle('SOD')" style="font-size:11px; padding:5px 12px; color:#38BDF8; border-color:#0284C7;">☀️ SOD (08:00 IST)</button>
 
+                    <button type="button" class="btn btn-secondary" onclick="runManualPipelineCycle('T1')" style="font-size:11px; padding:5px 12px; color:#22D3EE; border-color:#0891B2;">🕙 T1 (10:00 IST)</button>
+
                     <button type="button" class="btn btn-secondary" onclick="runManualPipelineCycle('EOD')" style="font-size:11px; padding:5px 12px; color:#A78BFA; border-color:#7C3AED;">🌆 EOD (18:00 IST)</button>
 
-                    <button type="button" class="btn btn-secondary" onclick="processSftpInboundUI()" style="font-size:11px; padding:5px 12px; color:#F472B6; border-color:#DB2777;">📥 SFTP Inbound</button>
-
                 </div>
 
             </div>
 
 
-
-            <!-- Custom Pipeline Configuration Controls -->
-
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:12px; margin-bottom:12px;">
-
-                <div>
-
-                    <label class="input-label" style="margin-bottom:2px; font-size:11px; color:#94A3B8;">Source Ingestion Fabric:</label>
-
-                    <select class="studio-input" id="manualPipeSource" style="width:100%; font-size:11.5px;">
-
-                        <option value="NEON_LIVE_DB">🌐 Live Neon PostgreSQL Cloud (L0 Raw)</option>
-
-                        <option value="SFTP_INBOUND">📁 Cloud SFTP Inbound (Pipe | / CSV / Excel)</option>
-
-                        <option value="AWS_S3_RAW">☁️ AWS S3 Raw Lakehouse (Parquet / JSON)</option>
-
-                        <option value="STAR_DATA_FACTORY" selected>🏛️ Relational Star Schema Factory (91 Tables)</option>
-
-                    </select>
-
-                </div>
-
-                <div>
-
-                    <label class="input-label" style="margin-bottom:2px; font-size:11px; color:#94A3B8;">Target Processing Fabric:</label>
-
-                    <select class="studio-input" id="manualPipeTarget" style="width:100%; font-size:11.5px;">
-
-                        <option value="FULL_MEDALLION" selected>☁️ S3 Lakehouse &rarr; Snowflake DW &rarr; DuckDB Marts</option>
-
-                        <option value="SNOWFLAKE_ONLY">❄️ Snowflake BANK_DB Medallion Only (L0 &rarr; L1 &rarr; L2)</option>
-
-                        <option value="S3_LAKEHOUSE_ONLY">☁️ AWS S3 Cloud Lakehouse Only</option>
-
-                        <option value="DUCKDB_GOLD_ONLY">🦆 DuckDB Gold Analytical Marts Only (Zero Downtime)</option>
-
-                    </select>
-
-                </div>
-
-                <div>
-
-                    <label class="input-label" style="margin-bottom:2px; font-size:11px; color:#94A3B8;">Operational Cycle Mode:</label>
-
-                    <select class="studio-input" id="manualPipeCycle" style="width:100%; font-size:11.5px;">
-
-                        <option value="FULL_LOAD" selected>FULL_LOAD (Truncate &amp; Complete Bulk Reload)</option>
-
-                        <option value="INCREMENTAL">INCREMENTAL (T-1 Watermark Delta Ingestion)</option>
-
-                        <option value="BOD">BOD (06:00 AM IST Beginning of Day Validation)</option>
-
-                        <option value="SOD">SOD (08:00 AM IST Start of Day Limits &amp; Positions)</option>
-
-                        <option value="EOD">EOD (18:00 PM IST End of Day Recon &amp; Reports)</option>
-
-                        <option value="SFTP_INBOUND">SFTP_INBOUND (Auto-detect &amp; Parse Inbound Feeds)</option>
-
-                    </select>
-
-                </div>
-
-                <div>
-
-                    <label class="input-label" style="margin-bottom:2px; font-size:11px; color:#94A3B8;">Target Project Scope:</label>
-
-                    <select class="studio-input" id="manualPipeProject" style="width:100%; font-size:11.5px;">
-
-                        <option value="ALL" selected>🌟 ALL 9 BANKING PROJECTS (Full Medallion)</option>
-
-                        <option value="credit_card">💳 Credit Card Risk &amp; Authorization</option>
-
-                        <option value="aml">🕵️ AML (Anti-Money Laundering &amp; KYC)</option>
-
-                        <option value="alm">⚖️ ALM (Asset Liability &amp; Treasury)</option>
-
-                        <option value="adf_cims">🏛️ ADF / CIMS (Regulatory RBI)</option>
-
-                        <option value="cbs">🏦 CBS Core Banking Ingestion</option>
-
-                        <option value="upi">📱 UPI Real-time Payments</option>
-
-                        <option value="ucic">👤 UCIC Master Customer 360</option>
-
-                        <option value="bureau_mart">📑 Credit Bureau Mart</option>
-
-                        <option value="data_lake">☁️ Enterprise Banking Data Lake</option>
-
-                    </select>
-
-                </div>
-
-                <div>
-
-                    <label class="input-label" style="margin-bottom:2px; font-size:11px; color:#94A3B8;">Batch Volume (Rows per Project):</label>
-
-                    <select class="studio-input" id="manualPipeRows" style="width:100%; font-size:11.5px;">
-
-                        <option value="50">50 rows (Fast Validation)</option>
-
-                        <option value="100">100 rows (Standard Cycle)</option>
-
-                        <option value="200" selected>200 rows (Full Star Schema Load)</option>
-
-                        <option value="500">500 rows (Stress &amp; Performance Benchmark)</option>
-
-                    </select>
-
-                </div>
-
-            </div>
-
-
-
-            <!-- Pipeline Execution Options Checkboxes -->
-
-            <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:12px; font-size:11.5px; color:#CBD5E1; background:rgba(7,11,22,0.6); padding:8px 12px; border-radius:6px; border:1px solid #1E293B;">
-
-                <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" id="chkSyncS3" checked /> ☁️ Upload S3 Lakehouse</label>
-
-                <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" id="chkIngestSnowflake" checked /> ❄️ Ingest Snowflake DW</label>
-
-                <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" id="chkReplicateDuckDb" checked /> 🦆 Replicate DuckDB Marts</label>
-
-                <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" id="chkPublishSftp" checked /> 📁 Publish SFTP /reports/</label>
-
-                <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" id="chkEnforceSftpRetention" checked /> 🧹 Enforce 20-Day Limit</label>
-
-                <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" id="chkSendAlerts" checked /> 📢 Telegram &amp; Email Alerts</label>
-
-            </div>
-
-
-
-            <!-- Big Action Trigger & Streaming Log Output Box -->
 
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
 
-                <button type="button" class="btn btn-primary" onclick="executeCustomDataPipeline()" style="background:linear-gradient(135deg, #0284C7 0%, #10B981 100%); font-weight:800; font-size:13px; padding:9px 22px; border:none; box-shadow:0 0 16px rgba(14,165,233,0.4);">
-
-                    🚀 Execute Custom Pipeline Now
-
-                </button>
-
-                <button type="button" class="btn btn-secondary" onclick="openSchedulePipelineModal()" style="font-size:12px; padding:8px 16px; color:#A78BFA; border-color:#8B5CF6;">
-
-                    ⏱️ Schedule This Pipeline in Task Scheduler &rarr;
-
-                </button>
-
-                <span id="manualPipeStatusText" style="font-size:12px; color:#94A3B8; margin-left:auto;">Status: Ready for execution</span>
+                <span id="manualPipeStatusText" style="font-size:12px; color:#94A3B8;">Status: Ready for execution</span>
 
             </div>
 
@@ -45789,7 +45591,7 @@ ${d.preview}`;
 
                 { id: 'node_postgres', name: 'PostgreSQL Fabric', icon: '🐘', layer: 'Neon Cloud & Local', color: '#06B6D4', x: W * 0.08, y: H * 0.64, r: 21, throughput: '48,500 rec/s', latency: '1.8 ms', health: '100%' },
 
-                { id: 'node_sftp', name: 'Cloud SFTP Hub', icon: '📁', layer: 'Port 2222 Inbound', color: '#10B981', x: W * 0.08, y: H * 0.80, r: 21, throughput: '35,000 rec/s', latency: '3.4 ms', health: '99.8%' },
+                { id: 'node_sftp', name: 'SFTP Landing (S3)', icon: '📁', layer: 's3://.../sftp/inbound', color: '#10B981', x: W * 0.08, y: H * 0.80, r: 21, throughput: 'partner feeds', latency: 'on arrival', health: 'live' },
 
 
 
@@ -46085,7 +45887,7 @@ ${d.preview}`;
 
                         { id: 'node_postgres', name: 'PostgreSQL Fabric', icon: '🐘', layer: 'Neon Cloud & Local', color: '#06B6D4', x: W * 0.08, y: H * 0.64, r: 21, throughput: '48,500 rec/s', latency: '1.8 ms', health: '100%' },
 
-                        { id: 'node_sftp', name: 'Cloud SFTP Hub', icon: '📁', layer: 'Port 2222 Inbound', color: '#10B981', x: W * 0.08, y: H * 0.80, r: 21, throughput: '35,000 rec/s', latency: '3.4 ms', health: '99.8%' },
+                        { id: 'node_sftp', name: 'SFTP Landing (S3)', icon: '📁', layer: 's3://.../sftp/inbound', color: '#10B981', x: W * 0.08, y: H * 0.80, r: 21, throughput: 'partner feeds', latency: 'on arrival', health: 'live' },
 
 
 
@@ -61295,25 +61097,7 @@ async function checkAllDatabasesLive() {
 
 
 
-        // 3. SFTP Hub
-
-        const sftp = results['CLOUD_SFTP_SERVER'] || {};
-
-        const sftpOnline = sftp.status === 'Connected' || sftp.success;
-
-        const badgeSFTP = document.getElementById('badgeDbSFTP');
-
-        if (badgeSFTP) {
-
-            badgeSFTP.innerText = sftpOnline ? 'OPERATIONAL' : 'OFFLINE';
-
-            badgeSFTP.style.color = sftpOnline ? '#10B981' : '#EF4444';
-
-        }
-
-
-
-        // 4. DuckDB
+        // 3. DuckDB
 
         const duck = results['DUCKDB_GOLD_LAKEHOUSE'] || {};
 
@@ -61347,7 +61131,7 @@ async function checkAllDatabasesLive() {
 
         if (stripText) stripText.innerText = new Date().toLocaleTimeString() + ' (All Live Verified)';
 
-        showStudioToast('Live DB Check Complete', 'Snowflake, AWS S3, Cloud SFTP, DuckDB & Neon verified connected.', 'success');
+        showStudioToast('Live DB Check Complete', 'Snowflake, AWS S3, SFTP landing, DuckDB & Neon verified connected.', 'success');
 
     } catch(e) {
 
@@ -61397,187 +61181,77 @@ async function runManualPipelineCycle(cycle) {
 
     const statusText = document.getElementById('manualPipeStatusText');
 
-    if (outBox) {
+    const batches = { BOD: 'BOD', SOD: 'SOD', T1: 'T1', EOD: 'EOD' };
 
-        outBox.style.display = 'block';
-
-        outBox.innerHTML = `[${new Date().toLocaleTimeString()}] Triggering ${cycle} Pipeline across all 9 Banking Projects...<br/>Connecting to AWS S3 &bull; Snowflake BANK_DB &bull; DuckDB Gold Marts...`;
-
-    }
-
-    if (statusText) statusText.innerText = `Status: Running ${cycle} Cycle...`;
-
-
-
-    try {
-
-        const res = await fetch(`/api/banking/trigger_cycle?cycle=${encodeURIComponent(cycle)}`, { method: 'POST' });
-
-        const data = await res.json();
-
-        if (outBox) {
-
-            outBox.innerHTML += `<br/>[${new Date().toLocaleTimeString()}] ✅ ${cycle} Complete! Success: ${data.success}, Processed: ${data.projects_processed || 9} projects, Tables: ${data.total_tables || 91}. Duration: ${data.duration_sec || 8.4}s`;
-
-            outBox.scrollTop = outBox.scrollHeight;
-
-        }
-
-        if (statusText) statusText.innerText = `Status: ${cycle} Completed Successfully (91 Tables Refreshed)`;
-
-        showStudioToast(`${cycle} Pipeline Complete`, `Successfully processed 9 projects (91 Tables). S3, Snowflake, DuckDB synchronized.`, 'success');
-
-        if (typeof load3dPipelineTelemetry === 'function') load3dPipelineTelemetry();
-
-    } catch(e) {
-
-        if (outBox) outBox.innerHTML += `<br/>[Notice] Execution dispatched in background: ${e.message}`;
-
-        if (statusText) statusText.innerText = `Status: ${cycle} Dispatched`;
-
-    }
-
-}
-
-
-
-async function executeCustomDataPipeline() {
-
-    const src = document.getElementById('manualPipeSource')?.value || 'STAR_DATA_FACTORY';
-
-    const tgt = document.getElementById('manualPipeTarget')?.value || 'FULL_MEDALLION';
-
-    const cyc = document.getElementById('manualPipeCycle')?.value || 'FULL_LOAD';
-
-    const proj = document.getElementById('manualPipeProject')?.value || 'ALL';
-
-    const rows = parseInt(document.getElementById('manualPipeRows')?.value || '200');
-
-
-
-    const outBox = document.getElementById('manualPipelineOutputBox');
-
-    const statusText = document.getElementById('manualPipeStatusText');
+    const isBatch = !!batches[cycle];
 
     if (outBox) {
 
         outBox.style.display = 'block';
 
-        outBox.innerHTML = `[${new Date().toLocaleTimeString()}] Executing Custom Pipeline:
-
-Source: ${src} &rarr; Target: ${tgt}
-
-Cycle: ${cyc} &bull; Scope: ${proj} &bull; Rows per Project: ${rows}
-
-Starting multi-tier ingestion flow...`;
+        outBox.innerHTML = `[${new Date().toLocaleTimeString()}] Dispatching ${cycle} run...<br/>Real chain: BigQuery &rarr; S3 Bronze &rarr; Glue &rarr; Snowflake L0/L1/L2 &rarr; DuckDB &rarr; report + alerts.`;
 
     }
 
-    if (statusText) statusText.innerText = `Status: Executing Custom Pipeline (${cyc})...`;
-
-
+    if (statusText) statusText.innerText = `Status: Dispatching ${cycle}...`;
 
     try {
 
-        const url = `/api/banking/trigger_cycle?cycle=${encodeURIComponent(cyc)}&project=${encodeURIComponent(proj)}&rows=${rows}`;
+        const res = isBatch
 
-        const res = await fetch(url, { method: 'POST' });
+            ? await fetch('/api/banking/orchestrator/cycle/run', {
+
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+
+                body: JSON.stringify({ cycle: batches[cycle] })
+
+            })
+
+            : await fetch('/api/banking/orchestrator/dag/run', {
+
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+
+                body: JSON.stringify({ dag_id: 'bq_to_s3', mode: cycle === 'FULL_LOAD' ? 'full' : 'incremental' })
+
+            });
 
         const data = await res.json();
 
+        if (!res.ok) {
+
+            const msg = data.detail || data.message || 'dispatch failed';
+
+            if (outBox) outBox.innerHTML += `<br/>[${new Date().toLocaleTimeString()}] ${msg}`;
+
+            if (statusText) statusText.innerText = `Status: ${cycle} not started`;
+
+            showStudioToast(`${cycle} Dispatch`, msg, 'warning');
+
+            return;
+
+        }
+
+        const msg = data.message || `${cycle} dispatched`;
+
         if (outBox) {
 
-            outBox.innerHTML += `<br/>[${new Date().toLocaleTimeString()}] ✅ Success: Pipeline landed in S3 &rarr; Snowflake &rarr; DuckDB &rarr; Reports & Outbound!`;
+            outBox.innerHTML += `<br/>[${new Date().toLocaleTimeString()}] ${msg}`;
 
             outBox.scrollTop = outBox.scrollHeight;
 
         }
 
-        if (statusText) statusText.innerText = `Status: Custom Pipeline Completed!`;
+        if (statusText) statusText.innerText = `Status: ${cycle} dispatched (background)`;
 
-        showStudioToast('Pipeline Executed', `Custom pipeline (${cyc}) completed successfully.`, 'success');
+        showStudioToast(`${cycle} Dispatched`, msg, 'success');
 
-    } catch(e) {
-
-        if (outBox) outBox.innerHTML += `<br/>[Notice] Pipeline dispatched: ${e.message}`;
-
-    }
-
-}
-
-
-
-async function processSftpInboundUI() {
-
-    try {
-
-        showStudioToast('SFTP Ingestion', 'Scanning SFTP /inbound/ for Pipe (|), CSV, and Excel files...', 'info');
-
-        const res = await fetch('/api/sftp/process-inbound', { method: 'POST' });
-
-        const data = await res.json();
-
-        showStudioToast('SFTP Inbound Processed', `Processed ${data.total_files_processed || 0} files (${data.total_records_ingested || 0} records ingested & archived).`, 'success');
+        setTimeout(() => { if (typeof ailabOrchRefreshAll === 'function') ailabOrchRefreshAll(true); }, 4000);
 
     } catch(e) {
 
-        showStudioToast('SFTP Notice', 'Inbound scan complete: ' + e.message, 'info');
+        if (outBox) outBox.innerHTML += `<br/>[Notice] Dispatch failed: ${e.message}`;
 
-    }
-
-}
-
-
-
-async function enforceSftpRetentionUI() {
-
-    try {
-
-        const res = await fetch('/api/sftp/cleanup', {
-
-            method: 'POST',
-
-            headers: {'Content-Type': 'application/json'},
-
-            body: JSON.stringify({retention_days: 20, purge_s3: true})
-
-        });
-
-        const data = await res.json();
-
-        showStudioToast('SFTP 20-Day Retention Enforced', data.message || `Purged expired files older than 20 days. ${data.kb_freed || 0} KB freed.`, 'success');
-
-    } catch(e) {
-
-        showStudioToast('SFTP Retention', 'Retention scan executed: ' + e.message, 'info');
-
-    }
-
-}
-
-
-
-async function generateSftpSamplesUI(proj) {
-
-    try {
-
-        const res = await fetch('/api/sftp/generate-samples', {
-
-            method: 'POST',
-
-            headers: {'Content-Type': 'application/json'},
-
-            body: JSON.stringify({project_key: proj || 'credit_card', rows: 50})
-
-        });
-
-        const data = await res.json();
-
-        showStudioToast('Sample Files Generated', `Created Pipe (|), CSV, and Excel (.xlsx) files in SFTP /inbound/${proj || 'credit_card'}/`, 'success');
-
-    } catch(e) {
-
-        showStudioToast('SFTP Sample Generation', 'Generated test files: ' + e.message, 'info');
+        if (statusText) statusText.innerText = `Status: ${cycle} dispatch error`;
 
     }
 

@@ -59,6 +59,10 @@ class ReportBuildRequest(BaseModel):
     deliver: bool = False
 
 
+class CycleRunRequest(BaseModel):
+    cycle: str = "EOD"
+
+
 # -------------------------------------------------------------
 # Live DAG overview + controls
 # -------------------------------------------------------------
@@ -78,6 +82,28 @@ def orchestrator_run(req: OrchestratorRunRequest):
         return JSONResponse(pipeline_orchestrator.run(req.dag_id, mode=req.mode))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+@router.post("/orchestrator/cycle/run")
+def orchestrator_cycle_run(req: CycleRunRequest):
+    """Runs one BOD/SOD/T1/EOD batch cycle (BQ -> S3 -> Snowflake -> DuckDB -> report/alerts)."""
+    from app.core import bank_batch_cycles
+
+    cycle = str(req.cycle or "").upper()
+    if cycle not in bank_batch_cycles.CYCLES:
+        raise HTTPException(status_code=400,
+                            detail=f"Unknown cycle '{cycle}'. Expected {', '.join(bank_batch_cycles.CYCLES)}.")
+    if bank_batch_cycles.is_running():
+        raise HTTPException(status_code=409, detail="A batch cycle is already running.")
+
+    threading.Thread(target=bank_batch_cycles.run, args=(cycle,), kwargs={"trigger": "ui"},
+                     daemon=True, name=f"batch-{cycle.lower()}").start()
+    return JSONResponse({
+        "status": "dispatched",
+        "cycle": cycle,
+        "label": bank_batch_cycles.CYCLES[cycle]["label"],
+        "message": f"{cycle} cycle started in the background. Refresh the orchestrator in a few minutes.",
+    })
 
 
 @router.post("/orchestrator/dag/pause")
