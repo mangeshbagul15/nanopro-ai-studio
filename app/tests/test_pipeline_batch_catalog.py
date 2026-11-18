@@ -182,6 +182,8 @@ class BatchLedgerTest(unittest.TestCase):
         self.assertIn("TO_DATE('2026-11-19')", merge)
         self.assertIn("EXPORTED_ROWS", merge)
         self.assertIsNone(re.search(r"\bROWS\b", merge))
+        self.assertIn("TRIGGERED_BY", merge)
+        self.assertIsNone(re.search(r"\bTRIGGER\b", merge))
         self.assertIn("WHEN NOT MATCHED THEN INSERT", merge)
         self.assertIn("BANK_DB.L2_CURATED.BATCH_CONTROL", merge)
 

@@ -521,7 +521,7 @@ def record_batch(cycle: str, business_date: str, status: str, trigger: str = "sc
         fq = _batch_fq(database)
         cursor.execute(
             f"CREATE TABLE IF NOT EXISTS {fq} ("
-            "BATCH_ID VARCHAR, CYCLE VARCHAR, BUSINESS_DATE DATE, STATUS VARCHAR, TRIGGER VARCHAR, "
+            "BATCH_ID VARCHAR, CYCLE VARCHAR, BUSINESS_DATE DATE, STATUS VARCHAR, TRIGGERED_BY VARCHAR, "
             "RUN_ID VARCHAR, EXPORTED_TABLES NUMBER(38,0), EXPORTED_ROWS NUMBER(38,0), DETAILS VARCHAR, "
             "STARTED_AT TIMESTAMP_NTZ, FINISHED_AT TIMESTAMP_NTZ, RECORDED_AT TIMESTAMP_NTZ)"
         )
@@ -529,17 +529,17 @@ def record_batch(cycle: str, business_date: str, status: str, trigger: str = "sc
             f"MERGE INTO {fq} t USING (SELECT "
             f"{_lit(batch_id)} AS BATCH_ID, {_lit(cycle.upper())} AS CYCLE, "
             f"TO_DATE({_lit(business_date)}) AS BUSINESS_DATE, {_lit(status.upper())} AS STATUS, "
-            f"{_lit(trigger)} AS TRIGGER, {_lit(run_id)} AS RUN_ID, {int(tables)} AS EXPORTED_TABLES, "
+            f"{_lit(trigger)} AS TRIGGERED_BY, {_lit(run_id)} AS RUN_ID, {int(tables)} AS EXPORTED_TABLES, "
             f"{int(rows)} AS EXPORTED_ROWS, {_lit(payload)} AS DETAILS, {_ts(started)} AS STARTED_AT, "
             f"{_ts(finished)} AS FINISHED_AT, CURRENT_TIMESTAMP() AS RECORDED_AT) s "
             "ON t.BATCH_ID = s.BATCH_ID "
             "WHEN MATCHED THEN UPDATE SET CYCLE = s.CYCLE, BUSINESS_DATE = s.BUSINESS_DATE, STATUS = s.STATUS, "
-            "TRIGGER = s.TRIGGER, RUN_ID = s.RUN_ID, EXPORTED_TABLES = s.EXPORTED_TABLES, "
+            "TRIGGERED_BY = s.TRIGGERED_BY, RUN_ID = s.RUN_ID, EXPORTED_TABLES = s.EXPORTED_TABLES, "
             "EXPORTED_ROWS = s.EXPORTED_ROWS, DETAILS = s.DETAILS, STARTED_AT = s.STARTED_AT, "
             "FINISHED_AT = s.FINISHED_AT, RECORDED_AT = s.RECORDED_AT "
-            "WHEN NOT MATCHED THEN INSERT (BATCH_ID, CYCLE, BUSINESS_DATE, STATUS, TRIGGER, RUN_ID, "
+            "WHEN NOT MATCHED THEN INSERT (BATCH_ID, CYCLE, BUSINESS_DATE, STATUS, TRIGGERED_BY, RUN_ID, "
             "EXPORTED_TABLES, EXPORTED_ROWS, DETAILS, STARTED_AT, FINISHED_AT, RECORDED_AT) "
-            "VALUES (s.BATCH_ID, s.CYCLE, s.BUSINESS_DATE, s.STATUS, s.TRIGGER, s.RUN_ID, "
+            "VALUES (s.BATCH_ID, s.CYCLE, s.BUSINESS_DATE, s.STATUS, s.TRIGGERED_BY, s.RUN_ID, "
             "s.EXPORTED_TABLES, s.EXPORTED_ROWS, s.DETAILS, s.STARTED_AT, s.FINISHED_AT, s.RECORDED_AT)"
         )
         connection.commit()
@@ -561,7 +561,7 @@ def batch_history(business_date: str = "", limit: int = 40) -> List[Dict[str, An
     try:
         cursor = connection.cursor()
         cursor.execute(
-            f"SELECT BATCH_ID, CYCLE, TO_VARCHAR(BUSINESS_DATE), STATUS, TRIGGER, RUN_ID, "
+            f"SELECT BATCH_ID, CYCLE, TO_VARCHAR(BUSINESS_DATE), STATUS, TRIGGERED_BY, RUN_ID, "
             f"EXPORTED_TABLES, EXPORTED_ROWS, DETAILS, TO_VARCHAR(STARTED_AT), TO_VARCHAR(FINISHED_AT) "
             f"FROM {_batch_fq(database)} {where}ORDER BY RECORDED_AT DESC LIMIT {max(1, int(limit))}"
         )
