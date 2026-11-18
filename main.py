@@ -2845,11 +2845,20 @@ async def api_global_ai_execute(request: Request, payload: Dict[str, Any] = Body
         model = payload.get("model", "auto")
         messages = payload.get("messages", [])
         effort = payload.get("effort", "default")
+
+        # Database/schema questions must be answered from the live catalog the
+        # Data Explorer renders, never from model memory. Earlier chat turns are
+        # not trusted for catalog facts: a single invented warehouse name would
+        # otherwise repeat across answers.
+        from app.core.live_catalog_context import system_prompt_for as catalog_system_prompt
+        system_prompt = catalog_system_prompt(prompt) or ""
+
         res = mcp_server._execute_tool("nanopro_global_ai_execute", {
             "prompt": prompt,
             "model": model,
             "messages": messages,
             "effort": effort,
+            "system_prompt": system_prompt,
             "image": payload.get("image", ""),
         })
         content = json.loads(res["content"][0]["text"])

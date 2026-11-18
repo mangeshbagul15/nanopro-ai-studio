@@ -1112,6 +1112,7 @@ class NanoProMCPServer:
         elif effort in ("reasoning", "architecture"):
             reasoning = {"effort": "high"}
         from app.core.model_adapter import model_manager
+        system_prompt = str(args.get("system_prompt") or "").strip() or None
         image = str(args.get("image") or "").strip()
         try:
             # A screenshot is only meaningful to the requested vision model; text-only
@@ -1123,6 +1124,7 @@ class NanoProMCPServer:
                 prompt=prompt,
                 models=models,
                 reasoning=reasoning,
+                system_prompt=system_prompt,
                 allow_fallback=not image.startswith("data:image/"),
                 image=image or None,
             )

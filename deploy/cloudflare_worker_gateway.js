@@ -457,6 +457,21 @@ export default {
         // Render cold-starting or down — fall through to the edge answer.
       }
 
+      // The edge fallback has no access to the live catalog, so it must not
+      // answer database questions from model memory.
+      const edgeCatalogQuestion =
+        /(databases?|\bdb\b|datasets?|schemas?|tables?|bigquery|snowflake|duckdb|\bs3\b|lakehouse|warehouse|डेटाबेस|स्कीमा|तक्ता|टेबल)/i.test(userMessage) &&
+        (/how\s+many|kiti|kont|which|list|show|what|count|ahe|ahet|bagh|dakhav|sang|किती|कोणत|दाखव|सांग|बघ|बघा|पहा/i.test(userMessage) ||
+          /bigquery|snowflake|duckdb|\bs3\b|lakehouse/i.test(userMessage) ||
+          userMessage.includes("?") ||
+          /\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/.test(userMessage));
+      if (edgeCatalogQuestion) {
+        return new Response(JSON.stringify({
+          status: "error",
+          error: "The backend that owns the live database catalog is unreachable. Database and schema questions are not answered from memory, so please retry in a few seconds."
+        }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+
       try {
 
         // System prompt for NanoPro Manager Agent
@@ -1822,11 +1837,7 @@ LAYER 1: 🖥️ UI & WORKSPACE FABRIC (ANTIGRAVITY MATTE DESIGN):
   * #global_ai_lab: Frontier AI Multi-Model Mesh (4,750+ models), Pareto Auto-Router, Interactive Chat, and Mathematical Details Accordion.
   * #airflow_hub: Apache Airflow 8 Production DAGs Manager, EOD T-1 Batch Processing, and WinSCP SFTP Hub.
   * #sql_studio: Live SQL & DDL Query IDE with multi-database execution against DuckDB, Snowflake, BigQuery.
-- Database Explorer Tree (4 Synchronized Databases):
-  * 🦆 DuckDB (In-memory gold_marts for sub-20ms queries)
-  * ❄️ Snowflake (BANK_DB enterprise staging & curated schemas)
-  * ☁️ Google BigQuery (Partitioned analytical data warehouse tables)
-  * 🟧 AWS S3 (Bronze Data Lake immutable parquet storage)
+- Database Explorer Tree — the ONLY authoritative source for live databases, datasets, schemas, tables and counts is the Data Explorer catalog (`/api/ai/explorer/catalog`). The design notes in this brief (BANK_DB, RAW_*, FACT_*, MART_* names, "4 databases") are historical templates for the intended banking lakehouse, NOT verified live objects. Never present them as the current live schema.
 - Dynamic SQL DDL Parser: Typing "CREATE TABLE ..." in chat dynamically registers the table in DuckDB metadata and renders it into the Explorer Tree in real time!
 - Native Mermaid SVG Renderer: Compiles \`\`\`mermaid ... \`\`\` markdown blocks into interactive graphical flowcharts directly inside chat bubbles!
 
@@ -1937,7 +1948,12 @@ CRITICAL OPERATIONAL RULES:
 3. 🛠️ TABLE CREATION & DDL ACTIONS:
    - Formulate clean production-grade SQL DDL when asked to create tables; state that the table is registered in DuckDB and Snowflake.
 4. 💡 INTERACTIVE SUGGESTION CHIPS:
-   - End responses with 2-3 interactive suggestion hints: [HINT: 🔍 पर्याय १ | 📊 पर्याय २ | ⚡ पर्याय ३]`;
+   - End responses with 2-3 interactive suggestion hints: [HINT: 🔍 पर्याय १ | 📊 पर्याय २ | ⚡ पर्याय ३]
+5. 🗄️ DATABASE & SCHEMA FACTS — NO GUESSING:
+   - Database, dataset, schema, table and column names may ONLY come from the live Data Explorer catalog.
+   - If the live catalog is not part of this conversation, do not list names from memory or from this brief. Reply that the user should check Data Explorer (or ask again so the live catalog is fetched).
+   - Never repeat a database claim from earlier chat history unless it was verified against the live catalog in that turn.
+   - When a connection reports no schemas, say it exposes no schemas instead of inventing example names.`;
 
     // Core Edge Multi-Model Dispatcher (0 MB Render Load)
     async function executeMultiModelAiCore(prompt, model = "auto", rawMessages = null) {
@@ -3662,6 +3678,49 @@ CRITICAL OPERATIONAL RULES:
           }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
         }
       }
+
+      // Database/schema/catalog facts must come from the live introspection
+      // that powers Data Explorer. The static system prompt below contains
+      // historical project templates (BANK_DB, RAW_*, MART_*) which the model
+      // otherwise repeats as if they existed, so these questions are answered
+      // by Render, whose /api/ai/execute injects the live catalog.
+      const catalogPrompt = String(prompt || "");
+      const catalogStorageTopic = /(storage|space|disk|capacity|स्पेस|जागा|स्टोरेज|क्षमता|शिल्लक)/i.test(catalogPrompt);
+      const catalogQuestion = !catalogStorageTopic && (
+        /\b[A-Z][A-Z0-9]*_[A-Z0-9_]+\b/.test(catalogPrompt) ||
+        (/(databases?|\bdb\b|datasets?|schemas?|tables?|bigquery|snowflake|duckdb|\bs3\b|lakehouse|warehouse|डेटाबेस|स्कीमा|तक्ता|टेबल)/i.test(catalogPrompt) &&
+          (/how\s+many|kiti|kont|which|list|show|what|count|verify|check|ahe|ahet|bagh|dakhav|dakhv|sang|किती|कोणत|दाखव|सांग|आहे|बघ|बघा|पहा/.test(catalogPrompt) ||
+            /bigquery|snowflake|duckdb|\bs3\b|lakehouse/i.test(catalogPrompt) ||
+            catalogPrompt.includes("?")))
+      );
+      if (catalogQuestion) {
+        const catalogRenderBase = env?.RENDER_MIRROR_URL || "https://nanopro-studio.onrender.com";
+        try {
+          const targetUrl = new URL(path + url.search, catalogRenderBase);
+          const headers = new Headers(request.headers);
+          headers.delete("host");
+          headers.set("Host", targetUrl.host);
+          headers.set("X-Forwarded-Host", url.host);
+          headers.set("X-NanoPro-Gateway", "Cloudflare-Live-Catalog-Render-Direct");
+          const response = await fetch(targetUrl.toString(), {
+            method: "POST",
+            headers,
+            body: await request.text(),
+            signal: AbortSignal.timeout(60000)
+          });
+          const fh = new Headers(response.headers);
+          fh.set("X-NanoPro-Routed-Node", catalogRenderBase);
+          fh.set("X-NanoPro-Mode", "RENDER_LIVE_CATALOG_GROUNDED");
+          fh.set("Access-Control-Allow-Origin", "*");
+          return new Response(response.body, { status: response.status, headers: fh });
+        } catch (err) {
+          return new Response(JSON.stringify({
+            status: "error",
+            message: "Live catalog service is unreachable, so database/schema names cannot be verified right now. Please retry in a few seconds — nothing was guessed."
+          }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+        }
+      }
+
       return await executeMultiModelAiCore(prompt, model, rawMessages);
     }
 

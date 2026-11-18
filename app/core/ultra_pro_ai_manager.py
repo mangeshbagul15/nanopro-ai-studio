@@ -236,19 +236,27 @@ class UltraProAIManager:
             internet_knowledge = self.search_live_internet(p_clean)
 
         # 3. Construct Omniscient Grounded Knowledge Prompt
+        from app.core.live_catalog_context import (
+            context_block as catalog_context_block,
+            is_catalog_question,
+            summary_line as catalog_summary_line,
+        )
+
+        catalog_block = catalog_context_block() if is_catalog_question(p_clean) else ""
         system_knowledge = f"""
 [NANOPRO ENTERPRISE AI STUDIO — LIVE OPERATING REALITY]
 • Platform: NanoPro AI Studio v33 (Engineered by Mangesh Bagul)
 • Active Primary Host: {live_state['host_node']}
 • Master Cloudflare Edge Worker: {live_state['gateway_url']} (HTTP 200 OK Active)
 • Cluster Topology: 10 Clustered Server Nodes (Local NVMe Master, Fly.io Singapore, Alwaysdata, PythonAnywhere, Cloudflare Edge, Northflank, Zeabur, Render, Back4App, Serv00).
-• Databases: 21 Database Engines across 6 DC/DR Pools.
+• Live Database Catalog: {catalog_summary_line()}
 • Lakehouse Marts: {live_state.get('duckdb_tables_total', 49)} Gold Marts in DuckDB ({live_state['duckdb_marts_path']}) with real live tables.
 • SQLite Database: {live_state['sqlite_db_path']} with 150,000+ real banking transactions.
 • Specialized AI Agents: 305 Autonomous Agents across 19 Groups (A-S) + NanoPro Manager Agent.
 • Git Repository: Branch '{live_state['git_branch']}', Latest Commit: {live_state['git_commit']} ({live_state.get('git_message', 'Synchronized')}).
 • Autonomous Sentinel Daemon: Active, self-healing, and testing all 43+ views 24/7.
 {internet_knowledge}
+{catalog_block}
 """
 
         # 4. Formulate the Ultra Pro Multi-Perspective Response with Real LLM Inference
@@ -276,14 +284,14 @@ class UltraProAIManager:
 तुमच्या प्रश्नाचे ('{p_clean}') थेट विश्लेषण:
 • **मास्टर क्लाउड गेटवे:** `{live_state['gateway_url']}`
 • **ॲक्टिव्ह होस्ट:** `{live_state['host_node']}`
-• **डेटाबेस व लेकहाउस:** DuckDB मध्ये **{live_state.get('duckdb_tables_total', 49)} Gold Marts** आणि २१ डेटाबेस सक्रिय आहेत.
+• **डेटाबेस व लेकहाउस:** {catalog_summary_line()} आणि DuckDB मध्ये **{live_state.get('duckdb_tables_total', 49)} Gold Marts**.
 • **स्वायत्त एजंट्स:** सर्व **३०५ स्पेशलाइज्ड एजंट्स** १९ ग्रूप्समध्ये कार्यरत असून २४/७ ऑटोमॅटिक टेस्ट सुरू आहेत.""")
             else:
                 reply_sections.append(f"""🤖 **NanoPro Manager & Antigravity AI:**
 System status for '{p_clean}':
 • **Master Gateway:** `{live_state['gateway_url']}`
 • **Active Host:** `{live_state['host_node']}`
-• **Lakehouse & DBs:** **{live_state.get('duckdb_tables_total', 49)} Gold Marts** in DuckDB with 21 connected engines.
+• **Lakehouse & DBs:** {catalog_summary_line()} plus **{live_state.get('duckdb_tables_total', 49)} Gold Marts** in DuckDB.
 • **Specialized Swarm:** All **305 autonomous agents** active across 19 groups with 24/7 reliability.""")
 
         full_reply = "\n\n".join(reply_sections).strip()
@@ -310,7 +318,7 @@ CURRENT SYSTEM REALITY & GROUNDING:
 {system_grounding}
 
 CORE INSTRUCTIONS:
-1. Always be fully grounded in the live system state above. You know all 52 features, 10 server nodes, 21 database engines, 49 DuckDB Gold Marts, and 320 agents across 20 groups (A-T).
+1. Always be grounded in the live system state above. For any database, dataset, schema or table question, use ONLY the LIVE DATA CATALOG block; never invent names and never quote a database count that is absent from it.
 2. Answer the user's specific question directly, thoroughly, and intelligently. Do NOT output a generic canned response.
 3. If the user asks in Marathi, respond in natural, fluent Marathi.
 4. If technical details, commands, or code are required, format them cleanly with markdown.
