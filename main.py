@@ -2895,6 +2895,10 @@ async def api_ai_bigquery_admin(request: Request, payload: Dict[str, Any] = Body
     try:
         result = maybe_handle(payload.get("prompt", ""))
         if result is None:
+            from app.core.chat_s3_export import maybe_handle as maybe_export
+
+            result = maybe_export(payload.get("prompt", ""))
+        if result is None:
             from app.core.chat_bigquery_data import maybe_handle as maybe_data
 
             result = maybe_data(payload.get("prompt", ""))
