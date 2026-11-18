@@ -4815,9 +4815,10 @@ CRITICAL OPERATIONAL RULES:
                               path === "/api/manager/chat" ||
                               path === "/api/prompt" ||
                               path.startsWith("/api/coding") ||
-                              path.startsWith("/api/image") ||
-                              path === "/api/jobs/bigquery_to_aws";
-      const timeoutMs = isSlowEndpoint ? 55000 : CONFIG.CLOUD_TIMEOUT_MS;
+                              path.startsWith("/api/image");
+      // The BigQuery→AWS export now also writes Iceberg tables, so it gets the edge's full 90s.
+      const isLakeExport = path === "/api/jobs/bigquery_to_aws";
+      const timeoutMs = isLakeExport ? 90000 : (isSlowEndpoint ? 55000 : CONFIG.CLOUD_TIMEOUT_MS);
 
 
 

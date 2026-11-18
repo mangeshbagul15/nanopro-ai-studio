@@ -31,6 +31,21 @@ CRON_AUDIT_LOGS = []
 import threading
 
 
+def _automation_authorised(request: Request) -> bool:
+    """Pipeline automation accepts the configured cron secret or a live session token."""
+    expected = (os.environ.get("NANOPRO_CRON_SECRET") or "").strip()
+    supplied = (request.headers.get("X-Cron-Secret") or request.query_params.get("secret") or "").strip()
+    if expected and supplied and hmac.compare_digest(supplied, expected):
+        return True
+    from app.core.api_auth import session_user_from_headers
+
+    return bool(session_user_from_headers(
+        cookie_header=request.headers.get("cookie", ""),
+        x_session_token=request.headers.get("X-Session-Token", ""),
+        authorization=request.headers.get("Authorization", ""),
+    ))
+
+
 def _cycle_refusal(request: Request):
     """Heavy EOD/BOD cycles and their message dispatch belong to the local lane.
 
@@ -205,6 +220,44 @@ async def cron_eod_trigger(request: Request):
         _record_cron_run("EOD_06PM", "ERROR", {"error": str(e)})
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
+@router.get("/bigquery_to_aws")
+@router.post("/bigquery_to_aws")
+async def cron_bigquery_to_aws(request: Request):
+    """Automation trigger: export every BigQuery dataset (minus nanopro_studio) to AWS.
+
+    Dispatches in the background so an external scheduler (EventBridge, cron-job.org,
+    Cloudflare Worker) gets an immediate 202 and never hits a gateway timeout.
+    """
+    if not _automation_authorised(request):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Automation credentials required."})
+
+    from app.core.bigquery_aws_pipeline import run_pipeline
+
+    start = time.time()
+    job_key = "BQ2AWS_" + time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+
+    def worker():
+        try:
+            result = run_pipeline()
+            _record_cron_run(job_key, str(result.get("status") or "").upper(), {
+                "summary": result.get("summary"),
+                "tables": len(result.get("tables") or []),
+                "rows": result.get("rows"),
+                "duration_s": round(time.time() - start, 2),
+            })
+            log_event(f"[CronGateway] {job_key}: {result.get('summary')}", component="CronGateway")
+        except Exception as exc:
+            _record_cron_run(job_key, "ERROR", {"error": str(exc)[:300]})
+            log_event(f"[CronGateway] {job_key} failed: {exc}", component="CronGateway")
+
+    threading.Thread(target=worker, daemon=True).start()
+    return JSONResponse(status_code=202, content={
+        "success": True,
+        "status": "DISPATCHED_IN_BACKGROUND",
+        "job": job_key,
+        "message": "BigQuery to AWS export started; results land in the cron audit ledger.",
+    })
+
 @router.get("/status")
 async def cron_gateway_status():
     """Returns status and configuration guide for cron-job.org console."""
@@ -248,6 +301,13 @@ async def cron_gateway_status():
                 "schedule": "0 18 * * * (06:00 PM IST)",
                 "method": "POST",
                 "purpose": "Daily Trial Balance & Executive Multi-Channel Dispatch"
+            },
+            {
+                "title": "NanoPro BigQuery → AWS Bronze Export",
+                "url": f"{base_url}/api/cron/bigquery_to_aws",
+                "schedule": "Every 15 minutes",
+                "method": "POST",
+                "purpose": "Automatic BigQuery → S3/Glue/Iceberg export for every dataset except nanopro_studio"
             }
         ],
         "recent_executions": CRON_AUDIT_LOGS

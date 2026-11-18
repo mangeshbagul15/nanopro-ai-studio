@@ -25,6 +25,7 @@ from app.core.logger import log_event
 SQS_QUEUE_NAME = "nanopro-pipeline-events"
 DDB_TABLE_NAME = "nanopro_pipeline_runs"
 CW_NAMESPACE = "NanoPro/BigQueryAWS"
+SNS_TOPIC_NAME = "nanopro-pipeline-notifications"
 GLUE_DATABASE = "nanopro_bronze"
 EXPORT_ROOT = "bronze/bigquery"
 RUN_ID_FORMAT = "%Y%m%dT%H%M%SZ"
@@ -137,6 +138,20 @@ def _cloudwatch_metrics(config: Dict[str, str], run: Dict[str, Any]) -> Dict[str
         return {"status": "published", "namespace": CW_NAMESPACE, "metrics": 4}
     except Exception as exc:
         return {"status": "unavailable", "namespace": CW_NAMESPACE, "error": _err(exc)}
+
+
+def _sns_notify(config: Dict[str, str], run: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        sns = _aws_client(config, "sns")
+        arn = sns.create_topic(Name=SNS_TOPIC_NAME)["TopicArn"]
+        sns.publish(
+            TopicArn=arn,
+            Subject="NanoPro BigQuery to AWS run",
+            Message=str(run.get("summary") or "")[:2500],
+        )
+        return {"status": "published", "topic": SNS_TOPIC_NAME}
+    except Exception as exc:
+        return {"status": "unavailable", "topic": SNS_TOPIC_NAME, "error": _err(exc)}
 
 
 def _athena_type(duck_type: str) -> str:
@@ -395,6 +410,10 @@ def run_pipeline(datasets: Optional[List[str]] = None) -> Dict[str, Any]:
     payload["aws_services"]["sqs"] = _sqs_send(config, event)
     payload["aws_services"]["dynamodb"] = _dynamodb_record(config, payload)
     payload["aws_services"]["cloudwatch"] = _cloudwatch_metrics(config, payload)
+    payload["aws_services"]["sns"] = _sns_notify(config, payload)
+    from app.core.iceberg_lake import publish as publish_iceberg
+
+    payload["aws_services"]["iceberg"] = publish_iceberg(config, all_files)
 
     payload["_http"] = 200 if payload["status"] != "error" else 502
     log_event(f"BigQuery→AWS pipeline {run_id}: {payload['summary']}", component="BigQueryAWSPipeline")

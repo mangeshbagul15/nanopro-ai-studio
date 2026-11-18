@@ -24,3 +24,6 @@ psycopg2-binary>=2.9.9
 edge-tts>=6.1.0
 
 duckdb>=2.0.0
+# Apache Iceberg open-table layer on S3 (free, no warehouse service)
+pyarrow>=15.0.0
+pyiceberg>=0.7.0
