@@ -208,6 +208,8 @@ def _dag_statuses(sftp: Dict[str, Any], notifications: List[Dict[str, Any]]) -> 
         "detail": (f"{len(files)} file(s) in landing · {len(new)} awaiting ingest · "
                    f"{len(sftp.get('tables') or [])} table(s) in bronze"),
         "files_failed": len(failed), "files_new": len(new),
+        "errors": [{"file": item.get("name"), "error": item.get("error") or "ingest failed"}
+                   for item in failed][:5],
         "last_batch": (sftp.get("batches") or [{}])[0],
     }
 
@@ -294,6 +296,34 @@ def overview(force: bool = False) -> Dict[str, Any]:
     notifications = pipeline_notifications.logs(50)
     statuses = _dag_statuses(sftp, notifications)
     cycles = bank_batch_cycles.status()
+    runs = _merged_runs(40)
+
+    last_errors: Dict[str, Dict[str, Any]] = {}
+    incidents: List[Dict[str, Any]] = []
+    for run in runs:
+        dag_key = str(run.get("dag") or "")
+        status = str(run.get("status") or "").upper()
+        if run.get("target") == "run" and status in FAIL_STATES:
+            incidents.append({"at": run.get("at"), "kind": "DAG_FAILURE", "dag": dag_key,
+                              "level": "ERROR", "message": f"{status}: {run.get('message')}"})
+            if dag_key and dag_key not in last_errors:
+                last_errors[dag_key] = {"at": run.get("at"), "status": status,
+                                        "message": run.get("message")}
+    for item in sftp.get("files") or []:
+        if item.get("status") == "error":
+            incidents.append({"at": item.get("modified") or "", "kind": "SFTP_FILE",
+                              "dag": "sftp_to_s3", "level": "ERROR",
+                              "message": f"{item.get('name')}: {item.get('error') or 'ingest failed'}"})
+    for table in (bq_export_scheduler.STATE.get("duckdb") or {}).get("mismatches") or []:
+        incidents.append({"at": "", "kind": "PARITY", "dag": "duckdb_report", "level": "WARNING",
+                          "message": f"{table}: DuckDB row count differs from Snowflake L0"})
+    for item in notifications[:20]:
+        if item.get("status") == "FAILED":
+            incidents.append({"at": item.get("timestamp") or "", "kind": "ALERT", "dag": "alerts",
+                              "level": "WARNING",
+                              "message": f"{item.get('channel')} -> {item.get('recipient')}: "
+                                         f"{item.get('error') or 'delivery failed'}"})
+    incidents.sort(key=lambda item: str(item.get("at") or ""), reverse=True)
 
     scheduler = {
         "armed": bool(bq_export_scheduler.STATE.get("armed")),
@@ -305,7 +335,8 @@ def overview(force: bool = False) -> Dict[str, Any]:
     healthy = sum(1 for item in statuses.values() if item["status"] == "SUCCESS")
     result = {
         "generated_at": datetime.now(IST).isoformat(timespec="seconds"),
-        "dags": [{**dag, **statuses[dag["id"]]} for dag in DAGS],
+        "dags": [{**dag, **statuses[dag["id"]], "last_error": last_errors.get(dag["id"])}
+                 for dag in DAGS],
         "scheduler": scheduler,
         "cycles": cycles,
         "cycle_schedules": {cycle: _cycle_time(cycle, cycles) for cycle in ("BOD", "SOD", "T1", "EOD")},
@@ -327,7 +358,8 @@ def overview(force: bool = False) -> Dict[str, Any]:
             "config": _masked_config(notifications),
             "logs": notifications[:20],
         },
-        "runs": (control().get("runs") or [])[:20],
+        "runs": runs,
+        "incidents": incidents[:25],
         "snowflake": bq_export_scheduler.STATE.get("snowflake") or {},
         "duckdb": bq_export_scheduler.STATE.get("duckdb") or {},
     }
@@ -387,6 +419,36 @@ def _require_dag(dag_id: str) -> str:
     return dag_id
 
 
+FAIL_STATES = ("ERROR", "FAILED", "PARTIAL", "ERROR_RETRY")
+
+
+def _merged_runs(limit: int = 40) -> List[Dict[str, Any]]:
+    try:
+        stored = control().get("runs") or []
+    except Exception:
+        stored = []
+    seen = {(r.get("at"), r.get("dag"), r.get("target"), r.get("message")) for r in RUNS}
+    return (RUNS + [r for r in stored
+                    if (r.get("at"), r.get("dag"), r.get("target"), r.get("message")) not in seen])[:limit]
+
+
+def _notify_failure(dag_id: str, status: str, message: str, elapsed: float) -> None:
+    try:
+        from app.core import pipeline_alerts
+
+        pipeline_alerts.dispatch(
+            subject=f"NanoPro pipeline {status}: {dag_id}",
+            body=f"DAG {dag_id} finished {status.lower()} after {round(elapsed, 1)}s.\n\n"
+                 f"Reason: {message[:280]}\n\n"
+                 + pipeline_alerts.pipeline_summary({"error": message[:280]}),
+            trigger="dag_failure",
+            async_send=True,
+        )
+    except Exception as exc:
+        log_event(f"[Orchestrator] failure alert could not be sent: {exc}", level="WARNING",
+                  component="Orchestrator")
+
+
 def _background(dag_id: str, target, actor: str) -> None:
     _INFLIGHT.add(dag_id)
 
@@ -397,21 +459,14 @@ def _background(dag_id: str, target, actor: str) -> None:
             status = str(result.get("status") or "success").upper() if isinstance(result, dict) else "SUCCESS"
             message = (result.get("summary") if isinstance(result, dict) else str(result)) or "completed"
             _record_run("run", dag_id, status, str(message)[:280], actor)
+            if status in FAIL_STATES:
+                log_event(f"[Orchestrator] {dag_id} {status}: {message}", level="ERROR",
+                          component="Orchestrator")
+                _notify_failure(dag_id, status, str(message), time.time() - started)
         except Exception as exc:
             _record_run("run", dag_id, "ERROR", str(exc)[:280], actor)
             log_event(f"[Orchestrator] {dag_id} failed: {exc}", level="ERROR", component="Orchestrator")
-            try:
-                from app.core import pipeline_alerts
-
-                pipeline_alerts.dispatch(
-                    subject=f"NanoPro pipeline FAILED: {dag_id}",
-                    body=f"DAG {dag_id} failed after {round(time.time() - started, 1)}s.\n\n"
-                         + pipeline_alerts.pipeline_summary({"error": str(exc)[:280]}),
-                    trigger="dag_failure",
-                    async_send=True,
-                )
-            except Exception:
-                pass
+            _notify_failure(dag_id, "ERROR", str(exc), time.time() - started)
         finally:
             _INFLIGHT.discard(dag_id)
             _OVERVIEW_CACHE["at"] = 0.0

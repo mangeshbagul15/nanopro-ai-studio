@@ -3383,7 +3383,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           <span style="font-size:16px;">⏱️</span>
           <div>
             <div style="font-size:11.5px;font-weight:800;color:#F8FAFC;">Airflow Orchestrator</div>
-            <div style="font-size:10px;color:#34D399;">8 DAGs • EOD T-1 • SFTP Hub</div>
+            <div style="font-size:10px;color:#34D399;">Live DAGs • EOD T-1 • SFTP Hub</div>
           </div>
         </div>
         <button type="button" class="ailab-btn-primary" onclick="ailabOpenAirflowModal()" style="padding:4px 10px;font-size:11px;background:#10B981;border-color:#10B981;color:#FFFFFF;font-weight:800;cursor:pointer;border-radius:6px;box-shadow:0 0 10px rgba(16,185,129,0.4);">
@@ -3634,7 +3634,7 @@ body.in-global_ai_lab .nano-dynamic-island {
     </div>
 
     <div class="ailab-modal-pills" style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;flex-wrap:wrap;">
-      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">&#9889; 8 DAGs</button>
+      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">&#9889; <span id="orchDagCountTab">DAGs</span></button>
       <button type="button" class="ailab-pill" id="tabAirflowSftp" onclick="ailabSwitchAirflowTab('sftp')">&#128194; SFTP Hub</button>
       <button type="button" class="ailab-pill" id="tabAirflowAlerts" onclick="ailabSwitchAirflowTab('alerts')">&#128276; Alerts</button>
       <button type="button" class="ailab-pill" id="tabAirflowLogs" onclick="ailabSwitchAirflowTab('logs')">&#128220; Logs</button>
@@ -3648,6 +3648,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         <div id="airflowSchedulerLine" style="font-size:11.5px;color:#CBD5E1;line-height:1.5;">Loading scheduler state...</div>
         <button type="button" class="ailab-code-btn" onclick="ailabOrchRefreshAll()" style="font-size:11px;color:#38BDF8;white-space:nowrap;">&#8635; Refresh</button>
       </div>
+      <div id="airflowIncidents" style="margin-bottom:12px;"></div>
       <div id="airflowDagsList" style="display:flex;flex-direction:column;gap:10px;">
         <div style="text-align:center;padding:20px;color:#94A3B8;">Loading live DAGs...</div>
       </div>
@@ -3734,7 +3735,11 @@ body.in-global_ai_lab .nano-dynamic-island {
     <div id="airflowTabLogs" style="display:none;padding:14px;overflow-y:auto;max-height:calc(92vh - 180px);">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <div style="font-size:12.5px;font-weight:700;color:#F8FAFC;">Runtime + orchestrator audit log</div>
-        <button type="button" class="ailab-code-btn" onclick="ailabOrchLoadLogs()" style="font-size:11px;color:#38BDF8;">&#8635; Refresh</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="orchLogFilter" placeholder="filter: dag id, ERROR, partner..." oninput="ailabOrchRenderStoredLogs()" style="width:220px;background:rgba(30,41,59,0.8);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:6px 9px;color:#F8FAFC;font-size:11.5px;">
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:#F87171;cursor:pointer;"><input type="checkbox" id="orchLogErrorsOnly" onchange="ailabOrchRenderStoredLogs()"> errors only</label>
+          <button type="button" class="ailab-code-btn" onclick="ailabOrchLoadLogs()" style="font-size:11px;color:#38BDF8;">&#8635; Refresh</button>
+        </div>
       </div>
       <div id="airflowOrchLogs" style="background:#090D16;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;font-family:ui-monospace,Menlo,Monaco,Consolas,monospace;font-size:11px;max-height:440px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;color:#CBD5E1;"></div>
     </div>
@@ -3742,7 +3747,7 @@ body.in-global_ai_lab .nano-dynamic-island {
     <!-- TAB 5: ARCHITECTURE -->
     <div id="airflowTabArch" style="display:none;padding:14px;overflow-y:auto;max-height:calc(92vh - 180px);">
       <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;">
-        <div style="font-size:13.5px;font-weight:700;color:#38BDF8;margin-bottom:10px;">Live data flow (what the 8 DAGs actually do)</div>
+        <div style="font-size:13.5px;font-weight:700;color:#38BDF8;margin-bottom:10px;">Live data flow (what the DAGs actually do)</div>
         <div style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#CBD5E1;line-height:2;white-space:pre-wrap;">SOURCE 1  BigQuery nanopro_cbs_bronze (CMG, GAM, HTD, SOL, SWIFT_MSG, TAM_LAM, UBO, VCT)
 SOURCE 2  SFTP landing  s3://nanopro-data-lake-765865641438/sftp/inbound/&lt;partner&gt;/  (CSV / TXT / XLSX)
               |
@@ -8422,6 +8427,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
       const data = await res.json();
       window.ailabOrchState.overview = data;
       ailabOrchRenderOverview(data);
+      ailabOrchRenderIncidents(data.incidents || []);
       ailabOrchRenderDags(data);
       ailabOrchRenderSftp(data.sftp || {});
       ailabOrchRenderOutbound(data.sftp_outbound || {});
@@ -8443,9 +8449,11 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     const scheduler = data.scheduler || {};
     const cycles = data.cycles || {};
     const cycleStates = (cycles.cycles || []).map(c => `${c.cycle}:${c.state}`).join("  ");
+    const incidents = data.incidents || [];
     const tiles = [
-      ["DAGS HEALTHY", `${summary.success || 0} / ${summary.total || 8}`,
-       (summary.paused ? `${summary.paused} paused` : "All schedulable"), summary.success === summary.total ? "#34D399" : "#FBBF24"],
+      ["DAGS HEALTHY", `${summary.success || 0} / ${summary.total || (data.dags || []).length || 0}`,
+       (summary.paused ? `${summary.paused} paused` : "All schedulable") + (incidents.length ? ` · ${incidents.length} incident(s)` : ""),
+       incidents.length ? "#F87171" : (summary.success === summary.total ? "#34D399" : "#FBBF24")],
       ["BUSINESS DATE", cycles.business_date || "-", cycleStates || "Timetable unavailable", "#38BDF8"],
       ["LAST EXPORT ROWS", orchNum(summary.rows), "BigQuery bronze snapshot", "#A78BFA"],
       ["SCHEDULER", scheduler.armed ? (scheduler.paused ? "PAUSED" : "ARMED") : "OFF",
@@ -8468,10 +8476,42 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     }
   };
 
+  window.ailabOrchRenderIncidents = function(incidents) {
+    const box = document.getElementById("airflowIncidents");
+    if (!box) return;
+    if (!incidents.length) {
+      box.innerHTML = `<div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:8px 12px;font-size:11.5px;color:#34D399;">&#10004; No failures, data errors or alert failures recorded in the recent runs.</div>`;
+      return;
+    }
+    box.innerHTML = `
+      <div style="background:rgba(248,113,113,0.07);border:1px solid rgba(248,113,113,0.35);border-radius:9px;padding:10px 12px;">
+        <div style="font-size:12px;font-weight:800;color:#F87171;margin-bottom:8px;">&#9888; Incidents (${incidents.length}) &bull; last failures, data errors, alert failures</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+        ${incidents.map(item => `
+          <div style="background:rgba(15,23,42,0.85);border:1px solid rgba(255,255,255,0.07);border-radius:7px;padding:8px 10px;">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap;">
+              <div style="min-width:0;">
+                <span style="font-size:9.5px;font-weight:800;color:${item.level === "WARNING" ? "#FBBF24" : "#F87171"};background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;">${orchEsc(item.kind)}</span>
+                <code style="font-size:10.5px;color:#38BDF8;margin-left:6px;">${orchEsc(item.dag || "-")}</code>
+                <span style="font-size:10px;color:#64748B;margin-left:6px;">${orchEsc(String(item.at || "").replace("T", " "))}</span>
+                <div style="font-size:11.5px;color:#FCA5A5;margin-top:4px;word-break:break-word;">${orchEsc(item.message || "")}</div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                ${item.dag && item.dag !== "alerts" ? `<button type="button" class="ailab-code-btn" onclick="ailabOrchRun('${orchEsc(item.dag)}')" style="font-size:10.5px;color:#34D399;">&#9654; Retry</button>` : ""}
+                ${item.dag && item.dag !== "alerts" ? `<button type="button" class="ailab-code-btn" onclick="ailabOrchRollback('${orchEsc(item.dag)}')" style="font-size:10.5px;color:#F87171;border-color:rgba(248,113,113,0.4);">&#9198; Rollback</button>` : ""}
+              </div>
+            </div>
+          </div>`).join("")}
+        </div>
+      </div>`;
+  };
+
   window.ailabOrchRenderDags = function(data) {
     const box = document.getElementById("airflowDagsList");
     if (!box) return;
     const dags = data.dags || [];
+    const countTab = document.getElementById("orchDagCountTab");
+    if (countTab) countTab.textContent = `${dags.length} DAG${dags.length === 1 ? "" : "s"}`;
     if (!dags.length) {
       box.innerHTML = `<div style="text-align:center;padding:20px;color:#94A3B8;">No DAGs reported.</div>`;
       return;
@@ -8511,6 +8551,8 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
           </div>
           <div style="font-size:11.5px;color:#94A3B8;line-height:1.5;margin-bottom:6px;">${orchEsc(dag.description)}</div>
           <div style="font-size:11px;color:#CBD5E1;line-height:1.6;margin-bottom:6px;">${orchEsc(dag.detail)}</div>
+          ${dag.last_error ? `<div style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.35);border-radius:6px;padding:6px 9px;font-size:11px;color:#FCA5A5;margin-bottom:6px;word-break:break-word;"><strong>Last failure ${orchEsc(String(dag.last_error.at || "").replace("T", " "))}:</strong> ${orchEsc(dag.last_error.message || "")}</div>` : ""}
+          ${(dag.errors && dag.errors.length) ? `<div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:6px;padding:6px 9px;font-size:11px;color:#FCA5A5;margin-bottom:6px;">${dag.errors.map(e => `<div><strong>${orchEsc(e.file || "")}</strong>: ${orchEsc(e.error || "")}</div>`).join("")}</div>` : ""}
           <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;margin-bottom:6px;">${metrics.join("")}</div>
           <div style="font-size:10.5px;color:#64748B;margin-bottom:8px;">Schedule: ${orchEsc(dag.schedule)}${dag.finished_at ? ` &bull; finished ${orchEsc(dag.finished_at)}` : ""}</div>
           ${cycleStrip}
@@ -8818,6 +8860,32 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     }).join("");
   };
 
+  window.ailabOrchRenderStoredLogs = function() {
+    const box = document.getElementById("airflowOrchLogs");
+    if (!box) return;
+    const all = window.ailabOrchState.logs || [];
+    const term = (document.getElementById("orchLogFilter")?.value || "").trim().toLowerCase();
+    const errorsOnly = !!document.getElementById("orchLogErrorsOnly")?.checked;
+    const rows = all.filter(item => {
+      const text = String(item.text || "");
+      if (errorsOnly && !/ERROR|FAILED|PARTIAL|ERROR_RETRY/i.test(text)) return false;
+      if (term && !text.toLowerCase().includes(term)) return false;
+      return true;
+    });
+    if (!rows.length) {
+      box.innerHTML = `<div style="color:#64748B;">${all.length ? "No log lines match this filter." : "No log entries yet."}</div>`;
+      return;
+    }
+    box.innerHTML = rows.map(item => {
+      const text = String(item.text || "");
+      let color = "#CBD5E1";
+      if (/ERROR|FAILED|ERROR_RETRY/i.test(text)) color = "#F87171";
+      else if (/WARNING|PARTIAL|MISSED|PAUSED/i.test(text)) color = "#FBBF24";
+      else if (/SUCCESS|synced|reconciled|registered|DELIVERED/i.test(text)) color = "#34D399";
+      return `<div style="color:${color};">${orchEsc(text)}</div>`;
+    }).join("");
+  };
+
   window.ailabOrchLoadLogs = async function() {
     const box = document.getElementById("airflowOrchLogs");
     if (!box) return;
@@ -8826,16 +8894,8 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
       const res = await fetch(ORCH_API + "/logs?limit=120");
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "HTTP " + res.status);
-      const logs = data.logs || [];
-      if (!logs.length) { box.innerHTML = `<div style="color:#64748B;">No log entries yet.</div>`; return; }
-      box.innerHTML = logs.map(item => {
-        const text = String(item.text || "");
-        let color = "#CBD5E1";
-        if (/ERROR|FAILED|ERROR_RETRY/i.test(text)) color = "#F87171";
-        else if (/WARNING|PARTIAL|MISSED|PAUSED/i.test(text)) color = "#FBBF24";
-        else if (/SUCCESS|synced|reconciled|registered|DELIVERED/i.test(text)) color = "#34D399";
-        return `<div style="color:${color};">${orchEsc(text)}</div>`;
-      }).join("");
+      window.ailabOrchState.logs = data.logs || [];
+      ailabOrchRenderStoredLogs();
     } catch (err) {
       box.innerHTML = `<div style="color:#F87171;">${orchEsc(err.message)}</div>`;
     }
