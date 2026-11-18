@@ -260,13 +260,7 @@ def _payload(manifest: Dict[str, Any], markdown: str, started: float) -> Dict[st
     }
 
 
-def maybe_handle(prompt: str) -> Optional[Dict[str, Any]]:
-    text = (prompt or "").strip()
-    if not text:
-        return None
-    if not (_EXPORT_Q.search(text) and _S3_Q.search(text) and _BRONZE_Q.search(text)):
-        return None
-
+def run_export() -> Dict[str, Any]:
     started = time.time()
     try:
         client = _bq_client()
@@ -286,6 +280,16 @@ def maybe_handle(prompt: str) -> Optional[Dict[str, Any]]:
     if manifest["failures"] and not manifest["files"]:
         return _error("Export failed: " + "; ".join(manifest["failures"]), started)
     return _payload(manifest, _markdown(manifest, duration_ms), started)
+
+
+def maybe_handle(prompt: str) -> Optional[Dict[str, Any]]:
+    text = (prompt or "").strip()
+    if not text:
+        return None
+    if not (_EXPORT_Q.search(text) and _S3_Q.search(text) and _BRONZE_Q.search(text)):
+        return None
+
+    return run_export()
 
 
 def _error(message: str, started: float) -> Dict[str, Any]:

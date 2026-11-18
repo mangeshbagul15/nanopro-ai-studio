@@ -7258,6 +7258,28 @@ async def api_aws_s3_harden(request: Request):
 
 
 
+@app.post('/api/jobs/s3_export')
+
+def api_jobs_s3_export(request: Request):
+
+    """Runs the bronze Parquet export for an external scheduler (EventBridge to Lambda)."""
+
+    import hmac
+
+    expected = (os.getenv("NANOPRO_JOB_KEY") or "").strip()
+
+    provided = (request.headers.get("X-NanoPro-Job-Key") or "").strip()
+
+    if not expected or not hmac.compare_digest(provided, expected):
+
+        raise HTTPException(status_code=401, detail="Job key required.")
+
+    from app.core.chat_s3_export import run_export
+
+    return JSONResponse(run_export())
+
+
+
 @app.post('/api/connections/test/telegram')
 
 async def api_test_telegram_connection_vault():
