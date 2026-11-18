@@ -132,6 +132,61 @@ async function checkEdgeAuth(request, url, env) {
   return valid;
 }
 
+// Static HTML ships under plain filenames (no content hash in the URL), so a
+// tab that was left open keeps running whatever build it loaded. Stamping the
+// build into the page and exposing it at /api/ui/version lets that tab notice a
+// newer deploy; no-store stops a cached copy from winning on the next load.
+const UI_VERSION = { value: "", at: 0 };
+
+async function textVersion(text) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(digest)).slice(0, 8).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function fetchAsset(env, assetPath) {
+  const resp = await env.ASSETS.fetch(new Request("https://dummy.host" + assetPath));
+  // Assets rewriting (`/x.html` → `/x`) answers with a redirect; follow it so
+  // callers always get the document itself.
+  if (resp.status >= 300 && resp.status < 400) {
+    const loc = resp.headers.get("location");
+    if (loc) return env.ASSETS.fetch(new Request("https://dummy.host" + loc));
+  }
+  return resp;
+}
+
+async function dashboardVersion(env, html) {
+  if (html !== undefined) {
+    const value = await textVersion(html);
+    UI_VERSION.value = value;
+    UI_VERSION.at = Date.now();
+    return value;
+  }
+  const now = Date.now();
+  if (UI_VERSION.value && now - UI_VERSION.at < 30000) return UI_VERSION.value;
+  const assetResp = await fetchAsset(env, "/complete_nanopro_dashboard.html");
+  return dashboardVersion(env, await assetResp.text());
+}
+
+async function serveHtmlAsset(env, assetPath) {
+  const assetResp = await fetchAsset(env, assetPath);
+  if (!assetResp.ok) return assetResp;
+  let html = await assetResp.text();
+  const headers = new Headers(assetResp.headers);
+  headers.delete("content-length");
+  headers.set("Content-Type", "text/html; charset=utf-8");
+  headers.set("Cache-Control", "no-store, must-revalidate");
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("X-NanoPro-Mode", "EDGE_STATIC_DASHBOARD");
+  if (assetPath === "/complete_nanopro_dashboard.html") {
+    const version = await dashboardVersion(env, html);
+    if (!/<meta[^>]+name="nanopro-asset-version"/i.test(html)) {
+      html = html.replace(/<head(\s[^>]*)?>/i, match => `${match}<meta name="nanopro-asset-version" content="${version}">`);
+    }
+    headers.set("X-NanoPro-Asset-Version", version);
+  }
+  return new Response(html, { status: 200, headers });
+}
+
 export default {
 
   async fetch(request, env, ctx) {
@@ -153,6 +208,22 @@ export default {
           "Access-Control-Max-Age": "86400"
         }
       });
+    }
+
+    // Build beacon for already-open tabs — cheap, and must not require auth so
+    // a stale login page can refresh itself too.
+    if (path === "/api/ui/version") {
+      try {
+        const version = env?.ASSETS ? await dashboardVersion(env) : "";
+        return new Response(JSON.stringify({ status: "success", version }), {
+          headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" }
+        });
+      } catch (_) {
+        return new Response(JSON.stringify({ status: "error", error: "Version unavailable" }), {
+          status: 503,
+          headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" }
+        });
+      }
     }
 
     // ================================================================
@@ -177,7 +248,7 @@ export default {
     if (path === "/login") {
       // Serve the official login_gateway.html from static assets
       if (env.ASSETS) {
-        const assetResp = await env.ASSETS.fetch(new Request("https://dummy.host/login_gateway.html"));
+        const assetResp = await serveHtmlAsset(env, "/login_gateway.html");
         if (assetResp.ok) return assetResp;
       }
       // Fallback: minimal login redirect page
@@ -187,7 +258,7 @@ export default {
     // Serve static assets directly (login_gateway.html, complete_nanopro_dashboard.html, etc.)
     if (path === "/login_gateway.html" || path === "/complete_nanopro_dashboard.html" || path === "/cloud_studio.html") {
       if (env.ASSETS) {
-        return env.ASSETS.fetch(new Request("https://dummy.host" + path));
+        return serveHtmlAsset(env, path);
       }
     }
 
@@ -203,13 +274,8 @@ export default {
       // AUTHENTICATED: Serve latest complete_nanopro_dashboard.html directly from Edge assets
       // (Zero load on Render, Sub-10ms response, always up-to-date)
       if (env.ASSETS) {
-        const dashResp = await env.ASSETS.fetch(new Request("https://dummy.host/complete_nanopro_dashboard.html"));
-        if (dashResp.ok) {
-          const finalHeaders = new Headers(dashResp.headers);
-          finalHeaders.set("X-NanoPro-Mode", "EDGE_STATIC_DASHBOARD");
-          finalHeaders.set("Access-Control-Allow-Origin", "*");
-          return new Response(dashResp.body, { status: dashResp.status, headers: finalHeaders });
-        }
+        const dashResp = await serveHtmlAsset(env, "/complete_nanopro_dashboard.html");
+        if (dashResp.ok) return dashResp;
       }
     }
 
@@ -5025,13 +5091,8 @@ CRITICAL OPERATIONAL RULES:
 
       // AUTHENTICATED: Serve complete_nanopro_dashboard.html from static assets
       if (env.ASSETS) {
-        const dashResp = await env.ASSETS.fetch(new Request("https://dummy.host/complete_nanopro_dashboard.html"));
-        if (dashResp.ok) {
-          const finalHeaders = new Headers(dashResp.headers);
-          finalHeaders.set("X-NanoPro-Mode", "EDGE_STATIC_DASHBOARD");
-          finalHeaders.set("Access-Control-Allow-Origin", "*");
-          return new Response(dashResp.body, { status: dashResp.status, headers: finalHeaders });
-        }
+        const dashResp = await serveHtmlAsset(env, "/complete_nanopro_dashboard.html");
+        if (dashResp.ok) return dashResp;
       }
 
       // Ultimate fallback: minimal loading page that points to the login

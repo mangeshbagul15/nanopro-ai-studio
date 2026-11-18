@@ -105960,6 +105960,53 @@ function showModernToast(title, msg, type = 'info') {
     }, 4000);
 }
 
+// --- 6b. Stale-build watchdog (#36) ---
+// The edge serves this page under a fixed filename, so a tab left open keeps
+// running the build it loaded. Every edge response carries
+// nanopro-asset-version and /api/ui/version reports the deployed build, so a
+// mismatch means a newer dashboard exists and the tab should reload itself.
+(function nanoWatchAssetVersion() {
+    const meta = document.querySelector('meta[name="nanopro-asset-version"]');
+    const build = meta ? meta.getAttribute('content') : '';
+    if (!build) return;
+
+    function showUpdateBanner() {
+        if (document.getElementById('nanoUpdateBanner')) return;
+        const el = document.createElement('div');
+        el.id = 'nanoUpdateBanner';
+        el.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2147483000;display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:#0F172A;border:1px solid #38BDF8;box-shadow:0 10px 30px rgba(0,0,0,.45);color:#E2E8F0;font-family:Inter,system-ui,sans-serif;font-size:12.5px;';
+        el.innerHTML = '<span>🔄 NanoPro चा नवीन build उपलब्ध आहे.</span><button style="background:#38BDF8;border:0;border-radius:6px;color:#04121F;font-weight:800;font-size:12px;padding:6px 10px;cursor:pointer;">Reload</button>';
+        el.querySelector('button').addEventListener('click', () => location.reload());
+        document.body.appendChild(el);
+    }
+
+    let checking = false;
+    async function check() {
+        if (checking) return;
+        checking = true;
+        try {
+            const res = await fetch('/api/ui/version', { cache: 'no-store' });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data || !data.version || data.version === build) return;
+            if (document.hidden) {
+                location.reload();
+                return;
+            }
+            showUpdateBanner();
+        } catch (_) {
+        } finally {
+            checking = false;
+        }
+    }
+
+    setInterval(check, 60000);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') check();
+    });
+    setTimeout(check, 20000);
+})();
+
 // --- 7. Matrix Text Scramble Engine (#205) ---
 function scrambleText(element, targetText, duration = 800) {
     if (!element) return;
