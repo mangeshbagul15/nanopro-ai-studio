@@ -81203,8 +81203,7 @@ async function runBigQueryAwsPipeline() {
 
             outBox.innerHTML = `<b>${summary}</b><pre style="white-space:pre-wrap; font-size:11px; color:#94A3B8; margin:8px 0 0;">` +
 
-                (data.tables || []).map(t => `${t.table}: ${t.status} (${t.rows} rows, ${t.bytes} bytes)`).join('
-') +
+                (data.tables || []).map(t => `${t.table}: ${t.status} (${t.rows} rows, ${t.bytes} bytes)`).join('\n') +
 
                 `</pre>`;
 
