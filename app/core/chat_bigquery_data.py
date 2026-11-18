@@ -77,10 +77,31 @@ def _scale(type_sql: str) -> int:
     return int(match.group(1)) if match else 2
 
 
-def _key_value(column: str, index: int) -> str:
+def _max_len(type_sql: str) -> Optional[int]:
+    if _base_type(type_sql) not in ("STRING", "BYTES"):
+        return None
+    match = re.search(r"\((\d+)\)", type_sql or "")
+    return int(match.group(1)) if match else None
+
+
+def _fit(text: str, limit: int) -> str:
+    """Shorten to limit without dropping the trailing digits that keep rows distinct."""
+    if len(text) <= limit:
+        return text
+    digits = re.search(r"\d+$", text)
+    if digits and len(digits.group(0)) < limit:
+        return text[: limit - len(digits.group(0))] + digits.group(0)
+    return text[:limit]
+
+
+def _key_value(column: str, index: int, max_len: Optional[int] = None) -> str:
     base = column[:-3] if column.upper().endswith("_ID") else column
     prefix = re.sub(r"[^A-Z0-9]", "", base.upper())[:6] or "KEY"
-    return f"{prefix}{index:08d}"
+    digits = f"{index:08d}"
+    if max_len:
+        # STRING(n) is enforced by the load job; keep the digits, trim the prefix.
+        return (prefix[: max(0, max_len - len(digits))] + digits)[-max_len:]
+    return prefix + digits
 
 
 def _scalar(name: str, type_sql: str, index: int) -> Any:
@@ -223,10 +244,16 @@ def _table_rows(client: Any, schema: str, table: str, count: int,
                 relations: Dict[Tuple[str, str], Tuple[str, str]],
                 key_store: Dict[Tuple[str, str], List[Any]],
                 offset: int = 0) -> List[Dict[str, Any]]:
-    from app.core.catalog_admin import _table_state
+    from app.core.catalog_admin import _table_state, _type_sql
 
     state = _table_state(client, schema, table)
-    columns = state["columns"]
+    # DESCRIBE drops STRING(n) and NUMERIC(p,s); the real schema keeps them.
+    table_obj = client.get_table(f"{client.project}.{schema}.{table}")
+    detailed = {field.name: _type_sql(field) for field in table_obj.schema}
+    columns = [
+        {"name": column["name"], "type": detailed.get(column["name"], column["type"])}
+        for column in state["columns"]
+    ]
     primary = set(state.get("primary_key") or [])
     fk_columns = {column for (child, column) in relations if child == table}
     key_columns = primary or {
@@ -241,6 +268,7 @@ def _table_rows(client: Any, schema: str, table: str, count: int,
         for column in columns:
             name = column["name"]
             type_sql = column["type"]
+            limit = _max_len(type_sql)
             if name in fk_columns:
                 parent_table, parent_column = relations[(table, name)]
                 parent_values = key_store.get((parent_table, parent_column)) or []
@@ -249,10 +277,13 @@ def _table_rows(client: Any, schema: str, table: str, count: int,
                 else:
                     row[name] = _key_value(parent_column, index)
             elif name in key_columns:
-                row[name] = _key_value(name, index)
+                row[name] = _key_value(name, index, limit)
                 keys[name].append(row[name])
             else:
-                row[name] = _scalar(name, type_sql, index)
+                value = _scalar(name, type_sql, index)
+                if limit and isinstance(value, str):
+                    value = _fit(value, limit)
+                row[name] = value
         rows.append(row)
     for column, values in keys.items():
         key_store[(table, column)] = values
@@ -315,12 +346,10 @@ def _insert(client: Any, schema: str, table: str, rows: List[Dict[str, Any]],
 
 
 def _column_types(client: Any, schema: str, table: str) -> Dict[str, str]:
-    from app.core.catalog_admin import _table_state
+    from app.core.catalog_admin import _type_sql
 
-    return {
-        column["name"]: column["type"]
-        for column in _table_state(client, schema, table)["columns"]
-    }
+    table_obj = client.get_table(f"{client.project}.{schema}.{table}")
+    return {field.name: _type_sql(field) for field in table_obj.schema}
 
 
 def _count_rows(client: Any, schema: str, table: str) -> int:
@@ -405,7 +434,7 @@ def _insert_samples(prompt: str) -> Dict[str, Any]:
     except CatalogError as exc:
         return _error(str(exc), started)
     except Exception as exc:
-        return _error(f"Insert failed: {type(exc).__name__}: {str(exc)[:400]}", started)
+        return _error(f"Insert failed: {type(exc).__name__}: {str(exc)[:1200]}", started)
 
     lines = [
         f"### ✅ {count} sample rows inserted into `{schema}`",
