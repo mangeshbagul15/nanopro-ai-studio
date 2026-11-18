@@ -13,7 +13,8 @@ from app.core.logger import log_event
 
 _STARTED = threading.Event()
 DEFAULT_INTERVAL_MIN = 60
-STATE: dict = {"armed": False, "interval_min": DEFAULT_INTERVAL_MIN, "last_attempt": None, "snowflake": {}}
+STATE: dict = {"armed": False, "interval_min": DEFAULT_INTERVAL_MIN, "last_attempt": None,
+               "snowflake": {}, "duckdb": {}}
 
 
 def _enabled() -> bool:
@@ -48,6 +49,12 @@ def _loop() -> None:
                         STATE["snowflake"] = sync_snowflake(result["tables"], str(result.get("run_id") or ""))
                     except Exception as exc:
                         STATE["snowflake"] = {"status": "error", "error": str(exc)[:240]}
+                    try:
+                        from app.core.duckdb_report_engine import build as build_duckdb_report
+
+                        STATE["duckdb"] = build_duckdb_report(result["tables"], str(result.get("run_id") or ""))
+                    except Exception as exc:
+                        STATE["duckdb"] = {"status": "error", "error": str(exc)[:240]}
                 try:
                     from app.core.cron_gateway_router import _record_cron_run
 

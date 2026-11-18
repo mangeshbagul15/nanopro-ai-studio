@@ -239,6 +239,7 @@ async def cron_bigquery_to_aws_status():
         },
         "last_run": last_run(),
         "snowflake": STATE.get("snowflake") or {},
+        "duckdb": STATE.get("duckdb") or {},
         "recent_executions": [r for r in CRON_AUDIT_LOGS if str(r.get("job_name", "")).startswith("BQ2AWS")][:10],
     })
 
