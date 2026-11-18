@@ -103,7 +103,7 @@ def _scalar(name: str, type_sql: str, index: int) -> Any:
     if base == "DATETIME":
         return (datetime(2026, 11, 1, 9, 0) + timedelta(minutes=index)).strftime("%Y-%m-%d %H:%M:%S")
     if base == "TIMESTAMP":
-        return (datetime(2026, 11, 1, 9, 0) + timedelta(minutes=index)).strftime("%Y-%m-%d %H:%M:%S+00")
+        return (datetime(2026, 11, 1, 9, 0) + timedelta(minutes=index)).strftime("%Y-%m-%d %H:%M:%S+00:00")
     if base == "TIME":
         return f"{(9 + index % 8):02d}:{(index * 7) % 60:02d}:00"
     if base == "JSON":
@@ -266,6 +266,9 @@ def _table_rows(client: Any, schema: str, table: str, count: int,
 
 def _json_value(value: Any, type_sql: str) -> Any:
     base = _base_type(type_sql)
+    if isinstance(value, Decimal):
+        # The load-job encoder in this client version has no Decimal branch.
+        return float(value)
     if base == "GEOGRAPHY" and isinstance(value, (tuple, list)):
         return f"POINT({value[0]} {value[1]})"
     if base == "BYTES" and isinstance(value, str):
