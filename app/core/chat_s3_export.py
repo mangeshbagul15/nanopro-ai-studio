@@ -173,6 +173,7 @@ def export_tables(bq_client: Any, s3: Any, bucket: str, schema: str, tables: Lis
                         Metadata={"sha256": digest, "rows": str(len(rows)), "source": f"bigquery:{schema}.{table}"},
                     )
                 files.append({
+                    "dataset": schema,
                     "table": table,
                     "key": key,
                     "rows": len(rows),

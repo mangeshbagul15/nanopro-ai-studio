@@ -171,14 +171,24 @@ def _register_catalog(config: Dict[str, str], files: List[Dict[str, Any]]) -> Di
         if "AlreadyExists" not in type(exc).__name__ and "already exists" not in _err(exc).lower():
             return {"status": "unavailable", "database": GLUE_DATABASE, "error": _err(exc)}
 
+    # One Glue database holds every dataset, so table names shared across
+    # datasets are qualified with their dataset instead of overwriting.
+    name_counts: Dict[str, int] = {}
+    for item in files:
+        name = str(item.get("table") or "").lower()
+        name_counts[name] = name_counts.get(name, 0) + 1
+
     for item in files:
         columns = item.get("columns") or []
         key = str(item.get("key") or "")
         if not columns or "/" not in key:
             continue
         location = f"s3://{config['bucket']}/{key.rsplit('/', 1)[0]}/"
+        name = str(item.get("table") or "").lower()
+        if name_counts.get(name, 0) > 1:
+            name = f"{str(item.get('dataset') or '').lower()}__{name}"
         table_input = {
-            "Name": str(item.get("table") or "").lower(),
+            "Name": name,
             "TableType": "EXTERNAL_TABLE",
             "Parameters": {"classification": "parquet", "EXTERNAL": "TRUE"},
             "StorageDescriptor": {
