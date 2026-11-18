@@ -21,7 +21,10 @@ from typing import Any, Dict, List, Optional, Tuple
 DEFAULT_SCHEMA = "nanopro_cbs_bronze"
 
 _SQL_FENCE = re.compile(r"```(?:sql)?\s*(.*?)```", re.IGNORECASE | re.DOTALL)
-_INSERT_VERB = re.compile(r"\binsert\b|भरा|भरून|टाका|घाला|\btak\w*\b", re.IGNORECASE)
+_INSERT_VERB = re.compile(
+    r"\binsert\b|\bappend\b|\badd\b|भरा|भरून|टाका|घाला|जोडा|\btak\w*\b",
+    re.IGNORECASE,
+)
 _SAMPLE_WORD = re.compile(
     r"sample|records?|rows?|data|नमुना|डेटा|रिकॉर्ड|ओळी", re.IGNORECASE
 )
@@ -30,7 +33,7 @@ _SAMPLE_WORD = re.compile(
 _DEVANAGARI = "\u0900-\u097F"
 _ALL_TABLES = re.compile(
     rf"\ball\b|saglya|सगळ्या|(?<![{_DEVANAGARI}])सर्व(?![{_DEVANAGARI}])"
-    rf"|pratyek|प्रत्येक|each",
+    rf"|prat(?:y?e?k\w*)|प्रत्येक|each",
     re.IGNORECASE,
 )
 _COUNT = re.compile(r"(\d{1,4})\s*(?:sample\s+)?(?:records?|rows?|रिकॉर्ड|ओळी)", re.IGNORECASE)
@@ -484,6 +487,9 @@ def _insert_samples(prompt: str) -> Dict[str, Any]:
             _insert(client, schema, table, rows, _column_types(client, schema, table))
             inserted.append((table, len(rows)))
         totals = {table: _count_rows(client, schema, table) for table in ordered}
+        from app.core.bq_export_scheduler import trigger as trigger_export
+
+        pipeline = trigger_export("chat")
     except CatalogError as exc:
         return _error(str(exc), started)
     except Exception as exc:
@@ -503,12 +509,22 @@ def _insert_samples(prompt: str) -> Dict[str, Any]:
             "",
             "Rows are inserted parents-first, so every FK column points at a real parent key.",
         ])
-    lines.extend(["", "_Explorer counts reload live — refresh गरज नाही._"])
+    lines.extend([
+        "",
+        "**Automatic pipeline**",
+        "",
+        f"`{pipeline.get('status')}` — {pipeline.get('message')}",
+        "",
+        "_⚡ Airflow Orchestrator → Runs येथे BigQuery → S3 → Glue → Snowflake → DuckDB status दिसेल._",
+        "",
+        "_Explorer counts reload live — refresh गरज नाही._",
+    ])
     return _payload(
         "insert_samples",
         "\n".join(lines),
         f"{count} sample rows inserted into {len(inserted)} tables of {schema}",
-        {"schema": schema, "count": count, "tables": dict(inserted), "totals": totals},
+        {"schema": schema, "count": count, "tables": dict(inserted), "totals": totals,
+         "pipeline": pipeline},
         started,
     )
 

@@ -12,9 +12,10 @@ import time
 from app.core.logger import log_event
 
 _STARTED = threading.Event()
+_RUN_LOCK = threading.Lock()
 DEFAULT_INTERVAL_MIN = 60
-STATE: dict = {"armed": False, "interval_min": DEFAULT_INTERVAL_MIN, "last_attempt": None,
-               "snowflake": {}, "duckdb": {}}
+STATE: dict = {"armed": False, "running": False, "interval_min": DEFAULT_INTERVAL_MIN,
+               "last_attempt": None, "snowflake": {}, "duckdb": {}}
 
 
 def _enabled() -> bool:
@@ -70,6 +71,107 @@ def run_once() -> dict:
     return result
 
 
+def is_running() -> bool:
+    return bool(STATE.get("running"))
+
+
+def trigger(actor: str = "auto") -> dict:
+    """Starts the BigQuery -> AWS -> Snowflake -> DuckDB chain in the background.
+
+    Called by the AI Lab chat right after rows land in BigQuery, so the lake
+    catches up immediately instead of waiting for the hourly tick.
+    """
+    if not _enabled():
+        return {"status": "disabled", "message": "NANOPRO_BQ_AUTO_EXPORT is off."}
+    if is_running():
+        return {"status": "running", "message": "An export chain is already in progress; it will pick these rows up."}
+    threading.Thread(target=_run_chain, args=(actor,), daemon=True,
+                     name=f"bq-export-{actor}").start()
+    return {"status": "started",
+            "message": "BigQuery -> S3 -> Glue -> Snowflake L0/L1/L2 -> DuckDB chain started."}
+
+
+def _record_orchestrator(actor: str, dag_id: str, status: str, message: str) -> None:
+    try:
+        from app.core.pipeline_orchestrator import _record_run
+
+        _record_run("run", dag_id, status, str(message or "")[:280], actor)
+    except Exception:
+        pass
+
+
+def _record_chain(actor: str, result: dict) -> None:
+    """One run entry for the DAG card plus per-stage entries for anything broken."""
+    from app.core.pipeline_orchestrator import FAIL_STATES
+
+    status = str((result or {}).get("status") or "error").upper()
+    summary = str((result or {}).get("summary") or "")
+    _record_orchestrator(actor, "bq_to_s3", status, summary or status)
+    if status in FAIL_STATES:
+        try:
+            from app.core.pipeline_orchestrator import _notify_failure
+
+            _notify_failure("bq_to_s3", status, summary, 0.0)
+        except Exception:
+            pass
+
+    sf = STATE.get("snowflake") or {}
+    sf_status = str(sf.get("status") or "")
+    if sf_status in ("error", "unavailable", "partial"):
+        sf_state = "PARTIAL" if sf_status == "partial" else "ERROR"
+        reason = str(sf.get("error") or sf.get("summary") or sf_status)
+        for dag in ("snowflake_l0", "snowflake_l1", "snowflake_l2"):
+            _record_orchestrator(actor, dag, sf_state, reason)
+
+    duck = STATE.get("duckdb") or {}
+    duck_status = str(duck.get("status") or "")
+    if duck_status == "error":
+        _record_orchestrator(actor, "duckdb_report", "ERROR",
+                             str(duck.get("error") or "DuckDB report failed"))
+    elif duck.get("mismatches"):
+        _record_orchestrator(actor, "duckdb_report", "PARTIAL",
+                             f"{len(duck['mismatches'])} parity mismatch(es): "
+                             + ", ".join(str(item) for item in duck["mismatches"][:5]))
+
+
+def _run_chain(actor: str = "auto") -> dict:
+    """Runs one full chain with a single-writer guard and orchestrator visibility."""
+    with _RUN_LOCK:
+        if STATE.get("running"):
+            return {"status": "running", "summary": "An export chain is already in progress."}
+        STATE["running"] = True
+    try:
+        from app.core import pipeline_orchestrator as orch
+
+        orch._INFLIGHT.add("bq_to_s3")
+        orch._OVERVIEW_CACHE["at"] = 0.0
+    except Exception:
+        orch = None
+    try:
+        result = run_once()
+        _record_chain(actor, result)
+        return result
+    except Exception as exc:
+        STATE["last_attempt"] = time.time()
+        log_event(f"[BQExport] {actor} run failed: {exc}", level="ERROR", component="BQExportScheduler")
+        _record_orchestrator(actor, "bq_to_s3", "ERROR", f"{type(exc).__name__}: {exc}")
+        try:
+            from app.core.pipeline_orchestrator import _notify_failure
+
+            _notify_failure("bq_to_s3", "ERROR", str(exc), 0.0)
+        except Exception:
+            pass
+        return {"status": "error", "summary": str(exc)[:280]}
+    finally:
+        STATE["running"] = False
+        if orch is not None:
+            try:
+                orch._INFLIGHT.discard("bq_to_s3")
+                orch._OVERVIEW_CACHE["at"] = 0.0
+            except Exception:
+                pass
+
+
 def _loop() -> None:
     time.sleep(90)  # let the boot sequence finish first
     while True:
@@ -82,22 +184,18 @@ def _loop() -> None:
             except Exception as exc:
                 log_event(f"[BQExport] batch poll failed: {exc}", level="WARNING", component="BQExportScheduler")
             if not handled:
+                result = _run_chain("scheduler")
                 try:
-                    result = run_once()
-                    try:
-                        from app.core.cron_gateway_router import _record_cron_run
+                    from app.core.cron_gateway_router import _record_cron_run
 
-                        job_key = "BQ2AWS_SCHED_" + str(result.get("run_id") or "")
-                        _record_cron_run(job_key, str(result.get("status") or "").upper(), {
-                            "summary": result.get("summary"),
-                            "tables": len(result.get("tables") or []),
-                            "rows": result.get("rows"),
-                        })
-                    except Exception:
-                        pass
-                except Exception as exc:
-                    STATE["last_attempt"] = time.time()
-                    log_event(f"[BQExport] run failed: {exc}", level="WARNING", component="BQExportScheduler")
+                    job_key = "BQ2AWS_SCHED_" + str(result.get("run_id") or "")
+                    _record_cron_run(job_key, str(result.get("status") or "").upper(), {
+                        "summary": result.get("summary"),
+                        "tables": len(result.get("tables") or []),
+                        "rows": result.get("rows"),
+                    })
+                except Exception:
+                    pass
             try:
                 from app.core.sftp_ingestion import poll as sftp_poll
 
