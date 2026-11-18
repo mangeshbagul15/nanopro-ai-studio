@@ -292,9 +292,21 @@ def _insert(client: Any, schema: str, table: str, rows: List[Dict[str, Any]],
     job = client.load_table_from_json(
         payload, f"{client.project}.{schema}.{table}", job_config=job_config
     )
-    job.result(timeout=600)
+    try:
+        job.result(timeout=600)
+    except Exception as exc:
+        detail = "; ".join(
+            str(item.get("message") or item) for item in (job.errors or [])[:2]
+        )
+        raise RuntimeError(f"{table}: {exc}{(' | ' + detail) if detail else ''}") from None
     if job.errors:
-        raise RuntimeError(f"{table}: {job.errors[0].get('message', 'load job failed')}")
+        detail = "; ".join(str(item.get("message") or item) for item in job.errors[:2])
+        raise RuntimeError(f"{table}: load reported errors: {detail}")
+    if (job.output_rows or 0) != len(payload):
+        raise RuntimeError(
+            f"{table}: load accepted {job.output_rows or 0} of {len(payload)} rows; "
+            f"first row was {str(payload[0])[:300] if payload else 'empty'}"
+        )
 
 
 def _column_types(client: Any, schema: str, table: str) -> Dict[str, str]:
