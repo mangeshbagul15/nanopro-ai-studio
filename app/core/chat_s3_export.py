@@ -95,7 +95,8 @@ def _s3_client(config: Dict[str, str]):
 def _bq_client():
     from app.core.chat_bigquery_data import _client
 
-    return _client()
+    client, _ = _client()
+    return client
 
 
 def _table_fields(client: Any, schema: str, table: str) -> List[Any]:
