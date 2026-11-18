@@ -29,32 +29,38 @@ def _interval_seconds() -> int:
     return max(5, minutes) * 60
 
 
+def run_once() -> dict:
+    """Export to S3, then refresh Snowflake layers and the DuckDB report."""
+    from app.core.bigquery_aws_pipeline import run_pipeline
+
+    result = run_pipeline()
+    STATE["last_attempt"] = time.time()
+    log_event(
+        f"[BQExport] {result.get('status')}: {result.get('summary')}",
+        component="BQExportScheduler",
+    )
+    if result.get("tables"):
+        try:
+            from app.core.snowflake_lakehouse import sync as sync_snowflake
+
+            STATE["snowflake"] = sync_snowflake(result["tables"], str(result.get("run_id") or ""))
+        except Exception as exc:
+            STATE["snowflake"] = {"status": "error", "error": str(exc)[:240]}
+        try:
+            from app.core.duckdb_report_engine import build as build_duckdb_report
+
+            STATE["duckdb"] = build_duckdb_report(result["tables"], str(result.get("run_id") or ""))
+        except Exception as exc:
+            STATE["duckdb"] = {"status": "error", "error": str(exc)[:240]}
+    return result
+
+
 def _loop() -> None:
     time.sleep(90)  # let the boot sequence finish first
     while True:
         if _enabled():
             try:
-                from app.core.bigquery_aws_pipeline import run_pipeline
-
-                result = run_pipeline()
-                STATE["last_attempt"] = time.time()
-                log_event(
-                    f"[BQExport] {result.get('status')}: {result.get('summary')}",
-                    component="BQExportScheduler",
-                )
-                if result.get("tables"):
-                    try:
-                        from app.core.snowflake_lakehouse import sync as sync_snowflake
-
-                        STATE["snowflake"] = sync_snowflake(result["tables"], str(result.get("run_id") or ""))
-                    except Exception as exc:
-                        STATE["snowflake"] = {"status": "error", "error": str(exc)[:240]}
-                    try:
-                        from app.core.duckdb_report_engine import build as build_duckdb_report
-
-                        STATE["duckdb"] = build_duckdb_report(result["tables"], str(result.get("run_id") or ""))
-                    except Exception as exc:
-                        STATE["duckdb"] = {"status": "error", "error": str(exc)[:240]}
+                result = run_once()
                 try:
                     from app.core.cron_gateway_router import _record_cron_run
 

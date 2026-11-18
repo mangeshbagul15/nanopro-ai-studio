@@ -264,14 +264,14 @@ async def cron_bigquery_to_aws(request: Request):
                 return JSONResponse(status_code=429, content={"success": False, "error": "Automated export already ran recently."})
             _AUTO_LOCK["at"] = now
 
-    from app.core.bigquery_aws_pipeline import run_pipeline
+    from app.core.bq_export_scheduler import run_once
 
     start = time.time()
     job_key = "BQ2AWS_" + time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
 
     def worker():
         try:
-            result = run_pipeline()
+            result = run_once()
             _record_cron_run(job_key, str(result.get("status") or "").upper(), {
                 "summary": result.get("summary"),
                 "tables": len(result.get("tables") or []),
