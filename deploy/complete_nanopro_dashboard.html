@@ -16406,7 +16406,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                                 <span class="spec-lbl">Permitted Toolset:</span>
 
-                                <span id="modalAgentTools" class="spec-val" style="color:#A78BFA; font-family:monospace;">oracle_cdc, s3_writer, snowflake_merge, qualify_dedup</span>
+                                <span id="modalAgentTools" class="spec-val" style="color:#A78BFA; font-family:monospace;">bigquery_extract, s3_writer, snowflake_merge, qualify_dedup</span>
 
                             </div>
 
@@ -29653,7 +29653,7 @@ ${data.result.message}`);
 
                                 <option value="snowsql" selected>SnowSQL (Snowflake Cloud DW)</option>
 
-                                <option value="plsql">PL/SQL (Oracle Database 4x)</option>
+                                <option value="bigquery">BigQuery SQL (Google Cloud StdSQL)</option>
 
                                 <option value="python">Python Lakehouse ETL (Pandas/PySpark)</option>
 
@@ -29686,6 +29686,8 @@ ${data.result.message}`);
                                 <option value="studio_memory.db">studio_memory.db [SQLite Studio Memory]</option>
 
                                 <option value="AWS_S3_DATA_LAKE">AWS_S3_DATA_LAKE [AWS Athena S3]</option>
+
+                                <option value="GOOGLE_BIGQUERY_SANDBOX">GOOGLE_BIGQUERY_SANDBOX [Google BigQuery CBS]</option>
 
                             </select>
 
@@ -29743,7 +29745,7 @@ ${data.result.message}`);
 
                         <textarea id="labCodeEditor" class="studio-input" style="font-family:'Consolas','Courier New',monospace; font-size:12px; height:340px; border-radius:0 0 6px 6px; resize:vertical; background:#020617; color:#E2E8F0; line-height:1.5; padding:10px;" spellcheck="false"># =====================================================================
 
-# PYTHON LAKEHOUSE ETL: CROSS-ENGINE ORACLE & SNOWFLAKE FEDERATED INGEST
+# PYTHON LAKEHOUSE ETL: CROSS-ENGINE BIGQUERY & SNOWFLAKE FEDERATED INGEST
 
 # =====================================================================
 
@@ -29753,11 +29755,11 @@ from app.database import sql_query_studio as sqs
 
 
 
-print("[INIT] Connecting to Oracle XE Core & Snowflake DW...")
+print("[INIT] Connecting to Google BigQuery CBS & Snowflake DW...")
 
-# 1. Fetch Oracle Customers
+# 1. Fetch BigQuery Customers
 
-oracle_customers = sqs.SAMPLE_TABLE_DATA.get("CUSTOMERS", [])
+bigquery_customers = sqs.SAMPLE_TABLE_DATA.get("CUSTOMERS", [])
 
 # 2. Fetch Snowflake Accounts
 
@@ -29765,7 +29767,7 @@ snowflake_accounts = sqs.SAMPLE_TABLE_DATA.get("ACCOUNTS", [])
 
 
 
-print(f"[EXTRACT] Loaded {len(oracle_customers)} Oracle customers & {len(snowflake_accounts)} Snowflake accounts.")
+print(f"[EXTRACT] Loaded {len(bigquery_customers)} BigQuery customers & {len(snowflake_accounts)} Snowflake accounts.")
 
 # 3. Perform In-Memory Hash Join & SCD2 Deduplication
 
@@ -37292,7 +37294,7 @@ Ready for message compilation and automated dispatch.
 
                             <label class="input-label">Database / Service Name</label>
 
-                            <input type="text" class="studio-input" id="addDbDatabase" value="XEPDB1" />
+                            <input type="text" class="studio-input" id="addDbDatabase" value="nanopro_cbs_bronze" />
 
                         </div>
 
@@ -41648,7 +41650,7 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
             {
                 name: "Snowflake CDC Transaction Replication",
                 hasFailHeal: false,
-                step1: { title: "Task Ala: Snowflake 1.25M Transactions", sub: "Incoming CDC event stream detected from Oracle XE", runner: "📦", emoji: "📥", spark: "✨" },
+                step1: { title: "Task Ala: Snowflake 1.25M Transactions", sub: "Incoming CDC event stream detected from BigQuery CBS", runner: "📦", emoji: "📥", spark: "✨" },
                 step2: { title: "Manager ne Validated CDC Schema", sub: "Manager checked Delta Lake constraints & partitioned keys", runner: "🧠", emoji: "🔍", spark: "💡" },
                 step3: { title: "Agent 02 Streamed to S3 Delta", sub: "Vectorized batch transformed via Polars in 12ms", runner: "⚡", emoji: "⚙️", spark: "🔥" },
                 step4: { title: "Telemetry Notification Dispatched", sub: "Sending sync receipt to WhatsApp (+918433755448) & Admin Mail", runner: "✈️", emoji: "💬", spark: "📲" },
@@ -48748,45 +48750,15 @@ function navigateHistory(direction) {
 
                 if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
 
-            } else if (connName === 'MY_ORACLE_XE_LOCAL') {
+            } else if (connName === 'GOOGLE_BIGQUERY_SANDBOX') {
 
-                if (hostEl) hostEl.value = '127.0.0.1';
-
-                if (portEl) portEl.value = '1521';
-
-                if (userEl) userEl.value = 'SYSTEM';
-
-                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
-
-            } else if (connName === 'MY_ORACLE_XE_REMOTE') {
-
-                if (hostEl) hostEl.value = '192.168.31.240';
-
-                if (portEl) portEl.value = '1521';
-
-                if (userEl) userEl.value = 'SYSTEM';
-
-                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
-
-            } else if (connName === 'MY_ORACLE_XE_REMOTE_New') {
-
-                if (hostEl) hostEl.value = '100.112.86.83';
-
-                if (portEl) portEl.value = '1521';
-
-                if (userEl) userEl.value = 'SYSTEM';
-
-                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
-
-            } else if (connName === 'ORACLE_APEX_23AI_CLOUD') {
-
-                if (hostEl) hostEl.value = 'oracleapex.com';
+                if (hostEl) hostEl.value = 'bigquery.googleapis.com';
 
                 if (portEl) portEl.value = '443';
 
-                if (userEl) userEl.value = 'mangeshbagul15@gmail.com';
+                if (userEl) userEl.value = 'nanoproaistudio@gmail.com';
 
-                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter secret to update"; }
+                if (secEl) { secEl.value = ""; secEl.placeholder = "Re-enter service-account JSON to update"; }
 
             } else if (connName === 'MY_POSTGRES_LOCAL') {
 
@@ -49026,12 +48998,6 @@ function navigateHistory(direction) {
 
                         if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
 
-                    } else if (c.connection_name === 'MY_ORACLE_XE_REMOTE') {
-
-                        const b = document.getElementById('badgeOracleStatus');
-
-                        if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
-
                     } else if (c.connection_name === 'GMAIL_SMTP') {
 
                         const b = document.getElementById('badgeGmailStatus');
@@ -49098,24 +49064,6 @@ function navigateHistory(direction) {
 
                         if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
 
-                    } else if (c.connection_name === 'MY_ORACLE_XE_LOCAL') {
-
-                        const b = document.getElementById('badgeOracleLocalStatus');
-
-                        if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
-
-                    } else if (c.connection_name === 'MY_ORACLE_XE_REMOTE_New') {
-
-                        const b = document.getElementById('badgeOracleTailscaleStatus');
-
-                        if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
-
-                    } else if (c.connection_name === 'ORACLE_APEX_23AI_CLOUD') {
-
-                        const b = document.getElementById('badgeOracleApexStatus');
-
-                        if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
-
                     } else if (c.connection_name === 'DUCKDB_GOLD_LAKEHOUSE') {
 
                         const b = document.getElementById('badgeDuckdbStatus');
@@ -49125,12 +49073,6 @@ function navigateHistory(direction) {
                     } else if (c.connection_name === 'GOOGLE_BIGQUERY_SANDBOX') {
 
                         const b = document.getElementById('badgeBigqueryStatus');
-
-                        if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
-
-                    } else if (c.connection_name === 'ORACLE_AWS_SNOWFLAKE_PIPELINE') {
-
-                        const b = document.getElementById('badgeInteroperabilityStatus');
 
                         if (b) { b.innerText = st; b.style.color = badgeColor; b.style.background = badgeBg; }
 
@@ -49430,10 +49372,6 @@ function navigateHistory(direction) {
 
                     await testSnowflakeConnectionAction();
 
-                } else if (cUpper.includes('ORACLE')) {
-
-                    await testOracleConnectionAction(connName);
-
                 } else if (cUpper.includes('POSTGRES')) {
 
                     await testPostgresConnectionAction(connName);
@@ -49469,10 +49407,6 @@ function navigateHistory(direction) {
                 } else if (cUpper === 'STUDIO_MEMORY_DB') {
 
                     await testSqliteConnectionAction();
-
-                } else if (cUpper === 'ORACLE_AWS_SNOWFLAKE_PIPELINE') {
-
-                    await testInteroperabilityAction();
 
                 } else {
 
@@ -49671,210 +49605,6 @@ function navigateHistory(direction) {
             } finally {
 
                 isTestingSnowflake = false;
-
-                if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
-
-            }
-
-        }
-
-
-
-        let isTestingOracle = false;
-
-        async function testOracleConnectionAction(connectionName = 'MY_ORACLE_XE_REMOTE') {
-
-            if (isTestingOracle) return;
-
-            isTestingOracle = true;
-
-
-
-            let btnId = 'btnTestOracle';
-
-            let badgeId = 'badgeOracleStatus';
-
-            let resultBoxId = 'oracleTestResultBox';
-
-            let targetHost = '192.168.31.240';
-
-
-
-            if (connectionName === 'MY_ORACLE_XE_LOCAL') {
-
-                btnId = 'btnTestOracleLocal';
-
-                badgeId = 'badgeOracleLocalStatus';
-
-                resultBoxId = 'oracleLocalTestResultBox';
-
-                targetHost = '127.0.0.1';
-
-            } else if (connectionName === 'MY_ORACLE_XE_REMOTE_New') {
-
-                btnId = 'btnTestOracleTailscale';
-
-                badgeId = 'badgeOracleTailscaleStatus';
-
-                resultBoxId = 'oracleTailscaleTestResultBox';
-
-                targetHost = '100.112.86.83';
-
-            } else if (connectionName === 'ORACLE_APEX_23AI_CLOUD') {
-
-                btnId = 'btnTestOracleApex';
-
-                badgeId = 'badgeOracleApexStatus';
-
-                resultBoxId = 'oracleApexTestResultBox';
-
-                targetHost = 'oracleapex.com';
-
-            }
-
-
-
-            const btn = document.getElementById(btnId);
-
-            const badge = document.getElementById(badgeId);
-
-            const resultBox = document.getElementById(resultBoxId);
-
-            const origHtml = btn ? btn.innerHTML : '🔍 Test Oracle Connection';
-
-
-
-            if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Testing Oracle...'; }
-
-            if (badge) { badge.innerText = 'Testing...'; badge.style.color = '#38BDF8'; badge.style.background = 'rgba(56,189,248,0.15)'; }
-
-            if (resultBox) {
-
-                resultBox.style.display = 'block';
-
-                resultBox.style.background = '#0F172A';
-
-                resultBox.style.border = '1px solid #334155';
-
-                resultBox.innerHTML = connectionName === 'ORACLE_APEX_23AI_CLOUD'
-
-                    ? `<span class="spinner-sm"></span> Checking HTTPS gateway and configured APEX/ORDS connection profile (${connectionName})...<br>• Database login and SQL access will be reported only if the configured schema endpoint authenticates.`
-
-                    : `<span class="spinner-sm"></span> Probing TCP port 1521 at ${targetHost} (${connectionName})...<br>• Validating the saved Oracle connection profile and XEPDB1 service...`;
-
-            }
-
-
-
-            try {
-
-                const res = await fetch('/api/connections/test/oracle', {
-
-                    method: 'POST',
-
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-
-                    body: JSON.stringify({ connection_name: connectionName })
-
-                });
-
-
-
-                let d = null;
-
-                const ct = res.headers.get('content-type') || '';
-
-                if (ct.includes('application/json')) {
-
-                    d = await res.json();
-
-                } else {
-
-                    const raw = await res.text().catch(() => '');
-
-                    d = { success: false, status: 'Server Error', error_message: `Server returned non-JSON (${res.status}): ${raw.slice(0, 150)}` };
-
-                }
-
-
-
-                const isSuccess = d && (d.success === true || d.status === 'Connected');
-
-                if (badge) {
-
-                    badge.innerText = d.status || (isSuccess ? 'Connected' : 'Offline / Standby');
-
-                    badge.style.color = isSuccess ? '#10B981' : '#F59E0B';
-
-                    badge.style.background = isSuccess ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)';
-
-                }
-
-
-
-                if (resultBox) {
-
-                    const isOrdsConnection = connectionName === 'ORACLE_APEX_23AI_CLOUD';
-
-                    let html = `<div style="font-weight:700; color:${isSuccess ? '#10B981' : '#F59E0B'}; margin-bottom:6px;">
-
-                        ${isSuccess ? '✅ ' + connectionName + ' Verified & Online' : '⚠️ ' + connectionName + ': ' + (d.status || 'Offline / Standby')}
-
-                    </div>`;
-
-                    html += `<div style="line-height:1.5; color:#CBD5E1;">
-
-                        ${isOrdsConnection
-
-                            ? `<div><strong>ORDS schema endpoint:</strong> ${d.endpoint || `https://${d.host || targetHost}:${d.port || 443}/ords/`}</div>
-
-                               <div><strong>Workspace:</strong> ${d.workspace || '—'} (REST API; not an Oracle Net/XEPDB1 service)</div>`
-
-                            : `<div><strong>Target:</strong> ${d.host || targetHost}:${d.port || 1521}/${d.service_name || 'XEPDB1'}</div>`}
-
-                        <div><strong>User:</strong> ${d.username || 'SYSTEM'}</div>
-
-                        <div><strong>Response Time:</strong> ${d.response_time_ms ? d.response_time_ms + ' ms' : '—'}</div>
-
-                        <div><strong>Status Detail:</strong> ${d.error_category === 'APEX_GATEWAY_ONLY'
-
-                            ? 'APEX gateway is reachable; database login and SQL access are unverified. A REST-enabled schema endpoint and database credentials are required.'
-
-                            : isSuccess ? 'Authenticated Oracle session active' : (d.error_message || 'Oracle connection was not verified.')}</div>
-
-                    </div>`;
-
-
-
-                    if (d.error_message) {
-
-                        html += `<div style="margin-top:6px; color:#EF4444; font-size:11px; background:rgba(239,68,68,0.1); padding:6px; border-radius:4px;">
-
-                            <strong>Diagnostic:</strong> ${d.error_message}
-
-                        </div>`;
-
-                    }
-
-                    resultBox.innerHTML = html;
-
-                }
-
-
-
-                await refreshConnectionHealthTable();
-
-            } catch (e) {
-
-                if (resultBox) {
-
-                    resultBox.innerHTML = `<div style="color:#EF4444;">❌ Network / Server Error: ${e.message || e}</div>`;
-
-                }
-
-            } finally {
-
-                isTestingOracle = false;
 
                 if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
 
@@ -51639,13 +51369,13 @@ function navigateHistory(direction) {
 
                     `## Summary\n` +
 
-                    `Results-driven Senior Data Engineer & AI Specialist with proven expertise in building resilient ETL/ELT pipelines, managing Snowflake/Oracle architectures, and orchestrating multi-agent systems.\n\n` +
+                    `Results-driven Senior Data Engineer & AI Specialist with proven expertise in building resilient ETL/ELT pipelines, managing Snowflake/BigQuery architectures, and orchestrating multi-agent systems.\n\n` +
 
                     `## Core Competencies\n` +
 
                     `• Distributed Data Pipelines (Python, SQL, PySpark, Airflow)\n` +
 
-                    `• Cloud Data Warehousing (Snowflake, BigQuery, Oracle)\n` +
+                    `• Cloud Data Warehousing (Snowflake, BigQuery, DuckDB)\n` +
 
                     `• AI Integration & Agentic Automation (FastAPI, Ollama, Telegram Bots)\n` +
 
@@ -66859,7 +66589,7 @@ ${d.preview}`;
 
                             const badgeBg = isOnline ? '#0F172A' : '#451A03';
 
-                            const borderColor = db.engine === 'snowflake' ? '#0284C7' : (db.engine === 'oracle' ? '#F59E0B' : '#334155');
+                            const borderColor = db.engine === 'snowflake' ? '#0284C7' : (db.engine === 'bigquery' ? '#4285F4' : '#334155');
 
                             cardsHtml += `
 
@@ -67173,7 +66903,7 @@ ${d.preview}`;
 
             } catch (e) {
 
-                if (schemaSel) schemaSel.innerHTML = '<option value="XEPDB1">XEPDB1</option>';
+                if (schemaSel) schemaSel.innerHTML = '<option value="nanopro_cbs_bronze">nanopro_cbs_bronze</option>';
 
             }
 
@@ -67335,7 +67065,7 @@ ${d.preview}`;
 
             const lin = d.lineage || {};
 
-            if (document.getElementById('lineageSource')) document.getElementById('lineageSource').innerText = lin.source || 'Oracle XE Core';
+            if (document.getElementById('lineageSource')) document.getElementById('lineageSource').innerText = lin.source || 'BigQuery CBS';
 
             if (document.getElementById('lineageBronze')) document.getElementById('lineageBronze').innerText = lin.bronze || 'RAW_STAGING';
 
@@ -67573,9 +67303,9 @@ ${d.preview}`;
 
         const LINEAGE_STAGES = [
 
-            { id: 'source', name: 'Oracle 19c XE', layer: 'SOURCE', sub: 'CBS CUSTOMERS', icon: '🗄️', color: '#F59E0B', x: 0.08, y: 0.5, throughput: '142,500 rec/s', latency: '2.1 ms', upstream: 'Finacle Core Banking DB', downstream: 'Snowpipe Channel 01', transform: 'Debezium CDC streaming log reader' },
+            { id: 'source', name: 'BigQuery CBS', layer: 'SOURCE', sub: 'nanopro_cbs_bronze', icon: '📊', color: '#4285F4', x: 0.08, y: 0.5, throughput: '142,500 rec/s', latency: '2.1 ms', upstream: 'Google BigQuery Sandbox', downstream: 'Snowpipe Channel 01', transform: 'Scheduled query + Parquet snapshot export' },
 
-            { id: 'ingestion', name: 'Snowpipe Channel 01', layer: 'INGESTION', sub: 'Kafka CDC Conduit', icon: '⚡', color: '#0284C7', x: 0.25, y: 0.5, throughput: '142,500 rec/s', latency: '4.8 ms', upstream: 'Oracle CBS WAL Logs', downstream: 'BANK_DB.L0_STAGING.RAW_CUSTOMERS', transform: 'Micro-batch byte buffer & schema envelope' },
+            { id: 'ingestion', name: 'Snowpipe Channel 01', layer: 'INGESTION', sub: 'Kafka CDC Conduit', icon: '⚡', color: '#0284C7', x: 0.25, y: 0.5, throughput: '142,500 rec/s', latency: '4.8 ms', upstream: 'BigQuery CBS change log', downstream: 'BANK_DB.L0_STAGING.RAW_CUSTOMERS', transform: 'Micro-batch byte buffer & schema envelope' },
 
             { id: 'bronze', name: 'Bronze Raw L0', layer: 'BRONZE L0', sub: 'RAW_CUSTOMERS', icon: '🥉', color: '#CD7F32', x: 0.42, y: 0.5, throughput: '142,500 rec/s', latency: '7.2 ms', upstream: 'Snowpipe Ingestion Channel', downstream: 'BANK_DB.L1_HARMONIZED.DIM_CUSTOMERS', transform: 'Append-only raw store + _INGEST_TIME metadata' },
 
@@ -67787,7 +67517,7 @@ ${d.preview}`;
 
                 latency: '14.2 ms',
 
-                upstream: 'Oracle CBS (XEPDB1.CUSTOMERS) via Snowpipe CDC',
+                upstream: 'BigQuery CBS (nanopro_cbs_bronze.CUSTOMERS) via Parquet export',
 
                 downstream: 'Silver Harmonized L1 SCD2 & AML Gold Mart',
 
@@ -68231,9 +67961,9 @@ WHEN NOT MATCHED THEN
 
                 schemaSel.innerHTML = '<option value="L0_STAGING" selected>L0_STAGING</option><option value="L1_HARMONIZED">L1_HARMONIZED</option><option value="L2_CURATED">L2_CURATED</option><option value="PUBLIC">PUBLIC</option>';
 
-            } else if (dbUpper.includes('ORACLE') || dbUpper.includes('ORCL')) {
+            } else if (dbUpper.includes('BIGQUERY') || dbUpper.includes('BQ')) {
 
-                schemaSel.innerHTML = '<option value="XEPDB1" selected>XEPDB1</option><option value="BANK_CORE">BANK_CORE</option><option value="SYSTEM">SYSTEM</option>';
+                schemaSel.innerHTML = '<option value="nanopro_cbs_bronze" selected>nanopro_cbs_bronze</option><option value="nanopro_studio">nanopro_studio</option>';
 
             } else if (dbUpper.includes('POSTGRES')) {
 
@@ -68277,15 +68007,15 @@ WHEN NOT MATCHED THEN
 
 SELECT * FROM BANK_DB.L0_STAGING.ACCOUNTS LIMIT 10;`;
 
-            } else if (lang === 'plsql') {
+            } else if (lang === 'bigquery') {
 
-                if (dbSel) dbSel.value = 'MY_ORACLE_XE_LOCAL';
+                if (dbSel) dbSel.value = 'GOOGLE_BIGQUERY_SANDBOX';
 
-                onLabDbSelectChanged('MY_ORACLE_XE_LOCAL');
+                onLabDbSelectChanged('GOOGLE_BIGQUERY_SANDBOX');
 
-                ed.value = `-- ORACLE PL/SQL & SQL (EXECUTES ON TARGET ORACLE INSTANCE)
+                ed.value = `-- BIGQUERY STANDARD SQL (GOOGLE CLOUD SANDBOX)
 
-SELECT * FROM CUSTOMERS WHERE ROWNUM <= 10;`;
+SELECT * FROM \`nanopro-lakehouse-sandbox.nanopro_cbs_bronze.ACCOUNTS\` LIMIT 10;`;
 
             } else if (lang === 'python') {
 
@@ -68531,9 +68261,9 @@ SELECT * FROM ACCOUNTS LIMIT 10;`;
 
                     hierEl.innerText = `Hierarchy: [ORG] → [ACCOUNT: XMUTKDJ-KP74023] → [DATABASE: ${dbName}] → [SCHEMA] → [TABLE]`;
 
-                } else if (dbUpper.includes('ORACLE') || dbUpper.includes('ORCL')) {
+                } else if (dbUpper.includes('BIGQUERY') || dbUpper.includes('BQ')) {
 
-                    hierEl.innerText = `Hierarchy: [ORACLE 19c INSTANCE] → [PDB: XEPDB1] → [SCHEMA: ${dbName}] → [TABLE]`;
+                    hierEl.innerText = `Hierarchy: [BIGQUERY SANDBOX] → [DATASET: nanopro_cbs_bronze] → [SCHEMA: ${dbName}] → [TABLE]`;
 
                 } else if (dbUpper.includes('POSTGRES')) {
 
@@ -69625,7 +69355,7 @@ SELECT * FROM ACCOUNTS LIMIT 10;`;
 
                     <div style="display:flex; justify-content:space-between; align-items:center; background:#0F172A; padding:8px 12px; border-radius:6px; border:1px solid #1E293B; flex-wrap:wrap; gap:6px;">
 
-                        <div><b>Project ID:</b> <code>${projectId}</code> &bull; <b>Engine:</b> <span style="color:#38BDF8;">Snowflake Medallion + Oracle 19c</span></div>
+                        <div><b>Project ID:</b> <code>${projectId}</code> &bull; <b>Engine:</b> <span style="color:#38BDF8;">Snowflake Medallion + BigQuery CBS</span></div>
 
                         <div><b>Recurrence:</b> <span style="color:#F59E0B;">Scheduled Automated Batch</span> &bull; <b>Quality Assertion:</b> <span style="color:#10B981;">DMF Passed (99.4%)</span></div>
 
@@ -69649,7 +69379,7 @@ SELECT * FROM ACCOUNTS LIMIT 10;`;
 
                             <b style="color:#F59E0B; font-size:12px;">Stage 1: CBS Source</b>
 
-                            <div style="font-size:10px; color:#94A3B8; margin-top:2px;">Oracle 19c Finacle</div>
+                            <div style="font-size:10px; color:#94A3B8; margin-top:2px;">BigQuery CBS Bronze</div>
 
                             <span class="badge" style="background:#022C22; color:#34D399; font-size:9px; margin-top:4px;">142.5K rec/s</span>
 
@@ -69817,7 +69547,7 @@ SELECT * FROM ACCOUNTS LIMIT 10;`;
 
                 if (badge) badge.innerText = `⚡ Latency ${latency}ms`;
 
-                showStudioToast('Socket Diagnostic', `Ping verified: ${latency}ms latency to Snowflake & Oracle sockets.`, 'success');
+                showStudioToast('Socket Diagnostic', `Ping verified: ${latency}ms latency to Snowflake & BigQuery sockets.`, 'success');
 
             } catch (e) {
 
@@ -70519,11 +70249,11 @@ SELECT * FROM ACCOUNTS LIMIT 10;`;
 
                     if (inputEl) inputEl.value = 'SELECT * FROM BANK_DB.L0_STAGING.ACCOUNTS LIMIT 10;';
 
-                } else if (dbUpper.includes('ORACLE') || dbUpper.includes('ORCL')) {
+                } else if (dbUpper.includes('BIGQUERY') || dbUpper.includes('BQ')) {
 
-                    schemaSel.innerHTML = '<option value="XEPDB1" selected>XEPDB1</option><option value="BANK_CORE">BANK_CORE</option><option value="SYSTEM">SYSTEM</option>';
+                    schemaSel.innerHTML = '<option value="nanopro_cbs_bronze" selected>nanopro_cbs_bronze</option><option value="nanopro_studio">nanopro_studio</option>';
 
-                    if (inputEl) inputEl.value = 'SELECT * FROM CUSTOMERS WHERE ROWNUM <= 10;';
+                    if (inputEl) inputEl.value = 'SELECT * FROM `nanopro-lakehouse-sandbox.nanopro_cbs_bronze.CUSTOMERS` LIMIT 10;';
 
                 } else if (dbUpper.includes('POSTGRES')) {
 
@@ -70683,7 +70413,7 @@ ORDER BY balance DESC;`
 
                         body: JSON.stringify({
 
-                            language: dbName.includes('ORACLE') ? 'plsql' : 'snowsql',
+                            language: dbName.toUpperCase().includes('BIGQUERY') ? 'bigquery' : 'snowsql',
 
                             code: sql,
 
@@ -73471,15 +73201,15 @@ const OFFICE_PODS_CONFIG = [
 
         chiefName: "Data Engineering Chief", chiefRole: "Bronze CDC & Lakehouse Pipeline Fabric",
 
-        specName: "CDC Ingestion Specialist", specRole: "Oracle Redo Log & Real-time Kafka Streaming"
+        specName: "CDC Ingestion Specialist", specRole: "BigQuery Export & Real-time Kafka Streaming"
 
     },
 
     { 
 
-        id: "C", name: "Pod C: Snowflake & Oracle Specialized Engine", color: "#6366F1", suitColor: "#4338CA", 
+        id: "C", name: "Pod C: Snowflake & BigQuery Specialized Engine", color: "#6366F1", suitColor: "#4338CA", 
 
-        chiefName: "Snowflake & Oracle Lead", chiefRole: "Cloud Data Warehouse & Dynamic Tables (1m Lag)",
+        chiefName: "Snowflake & BigQuery Lead", chiefRole: "Cloud Data Warehouse & Dynamic Tables (1m Lag)",
 
         specName: "Snowflake DW Specialist", specRole: "Zero-Copy Clones, Streams & Task Pipelines"
 
@@ -73933,7 +73663,7 @@ const PIXEL_WORKSTATIONS = createCyberOfficeWorkstations();
 
 const ROAMING_SPECIALISTS = [
 
-    { id: "roam_01", deskId: "spec_b", name: "CDC Ingestion Specialist", role: "Oracle Redo Log & Kafka Staging", x: 340, y: 365, targetX: 1490, targetY: 365, state: "roaming", bubbleText: "☕ Espresso break", bubbleTimer: 180, deskX: 419, deskY: 195, color: "#06B6D4" },
+    { id: "roam_01", deskId: "spec_b", name: "CDC Ingestion Specialist", role: "BigQuery Export & Kafka Staging", x: 340, y: 365, targetX: 1490, targetY: 365, state: "roaming", bubbleText: "☕ Espresso break", bubbleTimer: 180, deskX: 419, deskY: 195, color: "#06B6D4" },
 
     { id: "roam_02", deskId: "spec_c", name: "Snowflake DW Specialist", role: "Dynamic Tables & Partition Pruning", x: 600, y: 365, targetX: 60, targetY: 365, state: "roaming", bubbleText: "💾 Syncing S3 Lake", bubbleTimer: 210, deskX: 609, deskY: 195, color: "#6366F1" },
 
@@ -73979,7 +73709,7 @@ let isContinuousVoiceActive = false;
 
 const HIGH_TECH_MISSION_LOGS = [
 
-    { pod: "Pod B: Data Eng", color: "#06B6D4", text: "Agent #142 synced 4,820 CDC rows from Oracle XE to Snowflake Landing." },
+    { pod: "Pod B: Data Eng", color: "#06B6D4", text: "Agent #142 exported 4,820 rows from BigQuery CBS to the AWS S3 bronze lake." },
 
     { pod: "Pod A: Cognitive", color: "#38BDF8", text: "Groq LPU synthesized SQL query optimization in 290ms (Tokens/s: 194)." },
 
@@ -75053,7 +74783,7 @@ function drawHologramVideoWall(ctx, x, y) {
 
     const gauges = [
 
-        { label: "ORACLE CDC RATE", val: "14,280 rows/sec", fillPct: 0.82, color: "#06B6D4", gx: x + 16 },
+        { label: "BIGQUERY EXPORT RATE", val: "14,280 rows/sec", fillPct: 0.82, color: "#06B6D4", gx: x + 16 },
 
         { label: "S3 PARQUET STAGE", val: "1.84 TB Synced", fillPct: 0.91, color: "#38BDF8", gx: x + 200 },
 
@@ -75113,7 +74843,7 @@ function drawHologramVideoWall(ctx, x, y) {
 
     ctx.font = "bold 10px monospace";
 
-    ctx.fillText("● STATUS: 26 DEPARTMENT SPECIALISTS ACTIVE ACROSS 13 PODS | 4 CONNECTED DBS: ORACLE XE • S3 LAKE • SNOWFLAKE DW • SQLITE", x + 28, y + 118);
+    ctx.fillText("● STATUS: 26 DEPARTMENT SPECIALISTS ACTIVE ACROSS 13 PODS | 4 CONNECTED DBS: BIGQUERY CBS • S3 LAKE • SNOWFLAKE DW • SQLITE", x + 28, y + 118);
 
 
 
@@ -76691,9 +76421,9 @@ async function executeNanoProOfficeCommand(cmdText) {
 
             triggerOfficeDelegationDemo('summary_and_dispatch');
 
-        } else if (lower.includes('oracle') || lower.includes('snowflake') || lower.includes('ingest')) {
+        } else if (lower.includes('bigquery') || lower.includes('snowflake') || lower.includes('ingest')) {
 
-            triggerOfficeDelegationDemo('oracle_to_snowflake');
+            triggerOfficeDelegationDemo('bigquery_to_snowflake');
 
         } else if (lower.includes('call') || lower.includes('back to work') || lower.includes('kamala')) {
 
@@ -76769,7 +76499,7 @@ function triggerOfficeDelegationDemo(type) {
 
 
 
-    } else if (type === 'oracle_to_snowflake') {
+    } else if (type === 'bigquery_to_snowflake') {
 
         const mgr = PIXEL_WORKSTATIONS.find(w => w.id === "agent_01");
 
@@ -76779,7 +76509,7 @@ function triggerOfficeDelegationDemo(type) {
 
 
 
-        triggerBeamAnimation(mgr.x + mgr.w / 2, mgr.y + mgr.h, cdc.x + cdc.w / 2, cdc.y, "INGEST ORACLE", "#06B6D4");
+        triggerBeamAnimation(mgr.x + mgr.w / 2, mgr.y + mgr.h, cdc.x + cdc.w / 2, cdc.y, "EXPORT BIGQUERY", "#06B6D4");
 
         setTimeout(() => {
 
@@ -76789,9 +76519,9 @@ function triggerOfficeDelegationDemo(type) {
 
 
 
-        pushHudTickerLog("[Data Pipeline] Oracle XE CDC ➔ AWS S3 Parquet ➔ Snowflake DW synchronized!", "#10B981");
+        pushHudTickerLog("[Data Pipeline] BigQuery CBS ➔ AWS S3 Parquet ➔ Snowflake DW synchronized!", "#10B981");
 
-        showStudioToast("Lakehouse Synced", "Oracle CDC replicated to S3 and Snowflake with Dynamic Tables refresh!", "success");
+        showStudioToast("Lakehouse Synced", "BigQuery export replicated to S3 and Snowflake with Dynamic Tables refresh!", "success");
 
 
 
@@ -78273,7 +78003,7 @@ function setSmsTemplate(type) {
 
     if (type === 'status') {
 
-        el.value = '[NanoPro AI Studio] All systems operational. 5 Databases active (Snowflake, Oracle XE, SQLite). AI Models ready.';
+        el.value = '[NanoPro AI Studio] All systems operational. 5 Databases active (Snowflake, BigQuery, PostgreSQL, SQLite, AWS S3). AI Models ready.';
 
     } else if (type === 'otp') {
 
@@ -78711,13 +78441,7 @@ let activeLakehouseSelectedTable = null;
 
 const DE_CATALOG_SCHEMAS_MAP = {
 
-    'MY_ORACLE_XE_LOCAL': ['XEPDB1', 'SYSTEM', 'BANK_CORE', 'FINACLE_PROD', 'STAGING_ORACLE'],
-
-    'MY_ORACLE_XE_REMOTE': ['XEPDB1', 'SYSTEM', 'CBS_STAGING', 'FINACLE_CORE', 'ORCL_REPL'],
-
-    'MY_ORACLE_XE_REMOTE_New': ['XEPDB1', 'SYSTEM', 'TAILSCALE_FAILOVER', 'DR_MIRROR'],
-
-    'ORCL_LAN_240': ['XEPDB1', 'SYSTEM', 'CBS_BATCH', 'CLEARING_SYSTEM', 'CORE_REPL'],
+    'GOOGLE_BIGQUERY_SANDBOX': ['nanopro_cbs_bronze', 'nanopro_studio'],
 
     'BANK_DB': ['L0_STAGING', 'L1_HARMONIZED', 'L2_CURATED', 'PUBLIC', 'INFORMATION_SCHEMA'],
 
@@ -78743,7 +78467,7 @@ function getEngineForDb(dbName) {
 
     const s = (dbName || '').toUpperCase();
 
-    if (s.includes('ORACLE') || s.includes('ORCL') || s.includes('XEPDB1')) return 'oracle';
+    if (s.includes('BIGQUERY') || s.includes('BQ') || s.includes('NANOPRO_CBS_BRONZE')) return 'bigquery';
 
     if (s.includes('SNOWFLAKE') || s.includes('BANK_DB')) return 'snowflake';
 
@@ -78753,7 +78477,7 @@ function getEngineForDb(dbName) {
 
     if (s.includes('AWS') || s.includes('S3') || s.includes('ATHENA')) return 'aws_s3';
 
-    return 'oracle';
+    return 'sqlite';
 
 }
 
@@ -78769,7 +78493,7 @@ function onDeCatalogDbChanged() {
 
     if (!dbSelect || !schemaSelect) return;
 
-    const dbName = dbSelect.value || 'MY_ORACLE_XE_LOCAL';
+    const dbName = dbSelect.value || 'GOOGLE_BIGQUERY_SANDBOX';
 
 
 
@@ -78821,9 +78545,9 @@ function onDeCatalogSchemaChanged() {
 
     const tableSelect = document.getElementById('deCatalogTableSelect');
 
-    const dbName = dbSelect ? dbSelect.value : 'MY_ORACLE_XE_LOCAL';
+    const dbName = dbSelect ? dbSelect.value : 'GOOGLE_BIGQUERY_SANDBOX';
 
-    const schemaName = schemaSelect ? schemaSelect.value : 'XEPDB1';
+    const schemaName = schemaSelect ? schemaSelect.value : 'nanopro_cbs_bronze';
 
 
 
@@ -78877,7 +78601,7 @@ async function loadLakehouseCatalog(forcedDb, forcedSchema) {
 
 
 
-    const dbName = forcedDb || (dbSelect ? dbSelect.value : 'MY_ORACLE_XE_LOCAL');
+    const dbName = forcedDb || (dbSelect ? dbSelect.value : 'GOOGLE_BIGQUERY_SANDBOX');
 
     const schemaName = forcedSchema || (schemaSelect ? schemaSelect.value : 'XEPDB1');
 
@@ -79183,9 +78907,9 @@ function renderDeTableDataDictionary(forcedTableName) {
 
     const schemaSelect = document.getElementById('deCatalogSchemaSelect');
 
-    const dbName = dbSelect ? dbSelect.value : 'MY_ORACLE_XE_LOCAL';
+    const dbName = dbSelect ? dbSelect.value : 'GOOGLE_BIGQUERY_SANDBOX';
 
-    const schemaName = schemaSelect ? schemaSelect.value : 'XEPDB1';
+    const schemaName = schemaSelect ? schemaSelect.value : 'nanopro_cbs_bronze';
 
     const titleEl = document.getElementById('deActiveTableTitle');
 
@@ -79395,9 +79119,9 @@ async function checkDeCatalogConnection() {
 
 
 
-    const dbName = dbSelect ? dbSelect.value : 'MY_ORACLE_XE_LOCAL';
+    const dbName = dbSelect ? dbSelect.value : 'GOOGLE_BIGQUERY_SANDBOX';
 
-    const schemaName = schemaSelect ? schemaSelect.value : 'XEPDB1';
+    const schemaName = schemaSelect ? schemaSelect.value : 'nanopro_cbs_bronze';
 
     const engine = getEngineForDb(dbName);
 
@@ -79501,9 +79225,9 @@ async function fetchTableSampleRecords(forcedTableName, forcedLimit) {
 
     const schemaSelect = document.getElementById('deCatalogSchemaSelect');
 
-    const dbName = dbSelect ? dbSelect.value : 'MY_ORACLE_XE_LOCAL';
+    const dbName = dbSelect ? dbSelect.value : 'GOOGLE_BIGQUERY_SANDBOX';
 
-    const schemaName = schemaSelect ? schemaSelect.value : 'XEPDB1';
+    const schemaName = schemaSelect ? schemaSelect.value : 'nanopro_cbs_bronze';
 
     const engine = getEngineForDb(dbName);
 
@@ -92741,7 +92465,7 @@ SECOND_HIGHEST_SALARY: 70000`;
  // =========================================================================
 
  // 1. Cute 2D Database Mascot (Blinking eyes, smile, tapping feet, server LEDs)
- function draw2DDatabaseCharacter(ctx, x, y, scale, t, emotion = "happy", label = "Oracle DB", sub = "Source Data") {
+ function draw2DDatabaseCharacter(ctx, x, y, scale, t, emotion = "happy", label = "BigQuery CBS", sub = "Source Data") {
  ctx.save();
  ctx.translate(x, y);
  ctx.scale(scale, scale);
@@ -93785,7 +93509,7 @@ SECOND_HIGHEST_SALARY: 70000`;
  // =========================================================================
 
  // 1. Cute 2D Database Mascot (Blinking eyes, smile, tapping feet, server LEDs)
- function draw2DDatabaseCharacter(ctx, x, y, scale, t, emotion = "happy", label = "Oracle DB", sub = "Source Data") {
+ function draw2DDatabaseCharacter(ctx, x, y, scale, t, emotion = "happy", label = "BigQuery CBS", sub = "Source Data") {
  ctx.save();
  ctx.translate(x, y);
  ctx.scale(scale, scale);
@@ -94829,7 +94553,7 @@ SECOND_HIGHEST_SALARY: 70000`;
  // =========================================================================
 
  // 1. Cute 2D Database Mascot (Blinking eyes, smile, tapping feet, server LEDs)
- function draw2DDatabaseCharacter(ctx, x, y, scale, t, emotion = "happy", label = "Oracle DB", sub = "Source Data") {
+ function draw2DDatabaseCharacter(ctx, x, y, scale, t, emotion = "happy", label = "BigQuery CBS", sub = "Source Data") {
  ctx.save();
  ctx.translate(x, y);
  ctx.scale(scale, scale);
@@ -96033,7 +95757,7 @@ SECOND_HIGHEST_SALARY: 70000`;
  ctx.restore();
  }
 
- // 3. Draw Complete 3D Isometric Pipeline (Oracle -> AWS DMS -> S3 -> Snowflake -> Power BI)
+ // 3. Draw Complete 3D Isometric Pipeline (BigQuery -> AWS DMS -> S3 -> Snowflake -> Power BI)
  // Directly matching reference media_1793547128958_85ac46c3.jpg
  function drawPro3DIsometricPipeline(ctx, W, H, t, activeStageIdx, stageProg) {
  ctx.save();
@@ -96053,7 +95777,7 @@ SECOND_HIGHEST_SALARY: 70000`;
 
  // 4 Key Isometric Nodes along diagonal conveyor highway
  const nodes = [
- { x: W / 2 - 210, y: H * 0.35, label: "Oracle source", sub: "CDC Log Miner", type: "oracle" },
+ { x: W / 2 - 210, y: H * 0.35, label: "BigQuery CBS", sub: "Parquet Export", type: "bigquery" },
  { x: W / 2 - 70, y: H * 0.42, label: "AWS DMS", sub: "Change Capture", type: "dms" },
  { x: W / 2 + 70, y: H * 0.49, label: "S3 landing", sub: "Parquet Lake", type: "s3" },
  { x: W / 2 + 210, y: H * 0.56, label: "Snowflake", sub: "MERGE Engine", type: "snowflake" }
@@ -96115,9 +95839,9 @@ SECOND_HIGHEST_SALARY: 70000`;
  const isTarget = (stageIdx === (idx + 1)) || (stageIdx === 5 && idx === 3);
  const pulse = isTarget ? Math.abs(Math.sin(t * 4)) : 0;
 
- if (n.type === "oracle") {
- // 3D Isometric Oracle Cylinder Database
- draw3DMedallionCylinder(ctx, n.x, n.y - 10, 36, 14, 50, ["#1E3A8A", "#2563EB", "#3B82F6"], ["#60A5FA", "#3B82F6", "#1D4ED8"], "Oracle", n.sub, "SOURCE", isTarget, t);
+ if (n.type === "bigquery") {
+ // 3D Isometric BigQuery Cylinder Database
+ draw3DMedallionCylinder(ctx, n.x, n.y - 10, 36, 14, 50, ["#1E3A8A", "#2563EB", "#3B82F6"], ["#60A5FA", "#3B82F6", "#1D4ED8"], "BigQuery", n.sub, "SOURCE", isTarget, t);
  } else if (n.type === "dms") {
  // 3D Isometric AWS DMS Purple Cube
  draw3DIsometricCube(ctx, n.x, n.y - 10, 34, 40, 34, "#C084FC", "#9333EA", "#6B21A8", "AWS DMS", n.sub, pulse);
@@ -96280,7 +96004,7 @@ SECOND_HIGHEST_SALARY: 70000`;
  ctx.fillText("Raw Data se Business Insights tak!", 0, 27);
  ctx.restore();
 
- // 2. INGESTION ROW (Isometric Nodes: Oracle -> AWS DMS -> S3 -> Snowflake)
+ // 2. INGESTION ROW (Isometric Nodes: BigQuery -> AWS DMS -> S3 -> Snowflake)
  const row1Y = H * 0.28;
  const nodeX = [W / 2 - 185, W / 2 - 62, W / 2 + 62, W / 2 + 185];
 
@@ -96289,7 +96013,7 @@ SECOND_HIGHEST_SALARY: 70000`;
  draw3DIsometricPipe(ctx, nodeX[i] + 28, row1Y, nodeX[i+1] - 28, row1Y, "#38BDF8", t + i * 0.3);
  }
 
- // Node 1: Oracle Database (Blue Stacked Discs)
+ // Node 1: BigQuery Database (Blue Stacked Discs)
  ctx.save();
  ctx.translate(nodeX[0], row1Y);
  // Stack of 3 Discs
@@ -96308,19 +96032,19 @@ SECOND_HIGHEST_SALARY: 70000`;
  ctx.beginPath();
  ctx.ellipse(0, 0, 24, 9, 0, 0, Math.PI * 2);
  ctx.fill();
- // Red Oracle Badge
- ctx.fillStyle = "#DC2626";
+ // Blue BigQuery Badge
+ ctx.fillStyle = "#1A73E8";
  ctx.beginPath();
- ctx.roundRect(-16, 18, 32, 11, 3);
+ ctx.roundRect(-20, 18, 40, 11, 3);
  ctx.fill();
  ctx.fillStyle = "#FFFFFF";
  ctx.font = "bold 7px sans-serif";
  ctx.textAlign = "center";
- ctx.fillText("ORACLE", 0, 26);
+ ctx.fillText("BIGQUERY", 0, 26);
  // Label
  ctx.fillStyle = "#93C5FD";
  ctx.font = "bold 9.5px 'Segoe UI', sans-serif";
- ctx.fillText("Oracle DB", 0, -16);
+ ctx.fillText("BigQuery CBS", 0, -16);
  ctx.fillStyle = "#94A3B8";
  ctx.font = "7.5px sans-serif";
  ctx.fillText("Source Data", 0, -27);
@@ -96729,7 +96453,7 @@ SECOND_HIGHEST_SALARY: 70000`;
  const isSql = promptText.includes("sql") || promptText.includes("rank") || promptText.includes("dense_rank") || promptText.includes("partition") || promptText.includes("window") || promptText.includes("query") || stageTitle.includes("sql") || stageTitle.includes("rank") || stageTitle.includes("dense") || stageTitle.includes("partition") || stageTitle.includes("window");
  const isPython = (promptText.includes("python") || promptText.includes("asyncio") || promptText.includes("async") || promptText.includes("await") || stageTitle.includes("python") || stageTitle.includes("async")) && !isSql;
  const isDockerK8s = (promptText.includes("docker") || promptText.includes("k8s") || promptText.includes("kubernetes") || promptText.includes("container") || stageTitle.includes("docker") || stageTitle.includes("k8s") || stageTitle.includes("kubernetes")) && !isSql;
- const isLakehouse = (promptText.includes("lakehouse") || promptText.includes("medallion") || promptText.includes("bronze") || promptText.includes("silver") || promptText.includes("gold") || promptText.includes("duckdb") || promptText.includes("delta") || promptText.includes("iceberg") || promptText.includes("oracle") || promptText.includes("dms") || promptText.includes("snowflake") || promptText.includes("aws") || stageTitle.includes("bronze") || stageTitle.includes("silver") || stageTitle.includes("gold") || stageTitle.includes("lakehouse") || stageTitle.includes("medallion") || stageTitle.includes("snowflake") || stageTitle.includes("dms") || stageTitle.includes("duckdb")) && !isSql;
+ const isLakehouse = (promptText.includes("lakehouse") || promptText.includes("medallion") || promptText.includes("bronze") || promptText.includes("silver") || promptText.includes("gold") || promptText.includes("duckdb") || promptText.includes("delta") || promptText.includes("iceberg") || promptText.includes("bigquery") || promptText.includes("dms") || promptText.includes("snowflake") || promptText.includes("aws") || stageTitle.includes("bronze") || stageTitle.includes("silver") || stageTitle.includes("gold") || stageTitle.includes("lakehouse") || stageTitle.includes("medallion") || stageTitle.includes("snowflake") || stageTitle.includes("dms") || stageTitle.includes("duckdb")) && !isSql;
  const isAiRag = (promptText.includes("rag") || promptText.includes("agent") || promptText.includes("vector") || promptText.includes("embed") || promptText.includes("rerank") || promptText.includes("guardrail") || promptText.includes("llm") || promptText.includes("neural") || stageTitle.includes("rag") || stageTitle.includes("vector") || stageTitle.includes("rerank") || stageTitle.includes("guardrail") || stageTitle.includes("embed") || promptText.includes("shape") || promptText.includes("3d")) && !isLakehouse && !isSql;
 
  const centerY = 820;
@@ -96780,7 +96504,7 @@ SECOND_HIGHEST_SALARY: 70000`;
  return true;
  }
 
- // SCENE 5: COMPLETE 3D ISOMETRIC PIPELINE (ORACLE -> AWS DMS -> S3 -> SNOWFLAKE MERGE)
+ // SCENE 5: COMPLETE 3D ISOMETRIC PIPELINE (BIGQUERY -> AWS DMS -> S3 -> SNOWFLAKE MERGE)
  else {
  ctx.save();
  drawPro3DIsometricPipeline(ctx, W, H, t, 4, stageProg);
@@ -105686,7 +105410,7 @@ const PALETTE_COMMANDS = [
     { title: "Coding Agent Workspace", desc: "Full-stack code generator, refactoring and live sandbox", icon: "&#128187;", action: () => switchView('coding_agent') },
     { title: "SQL Video Maker (9:16 Shorts)", desc: "YouTube metadata, voiceover, and 60 FPS video renderer", icon: "&#127916;", action: () => switchView('sql_video') },
     { title: "Python Video Maker Studio", desc: "Interactive python concept animation studio and renderer", icon: "&#128013;", action: () => switchView('python_video') },
-    { title: "Data Engineering Lakehouse", desc: "Snowflake, Oracle 23ai XE, S3 Parquet pipelines & DuckDB fabric", icon: "&#9881;", action: () => switchView('data_engineer') },
+    { title: "Data Engineering Lakehouse", desc: "Snowflake, BigQuery CBS, S3 Parquet pipelines & DuckDB fabric", icon: "&#9881;", action: () => switchView('data_engineer') },
     { title: "Cybersecurity & Defenses Lab", desc: "Red-teaming, Nmap port scanner, PCAP analyzer, security audits", icon: "&#128737;", action: () => switchView('cyber_lab') },
     { title: "Make.com Automation Sync", desc: "Fire high-salary pipeline webhook trigger directly to Make.com", icon: "&#9889;", action: () => {
         fetch('/api/fabric/query', { credentials: 'omit' }).catch(() => {});

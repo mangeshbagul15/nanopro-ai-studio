@@ -1448,6 +1448,9 @@ class SqlQueryStudioEngine:
             else:
                 provenance_banner = f"🏛️ Oracle Database XE / 19c Enterprise | DB: {db_name} | Schema: {schema_name.upper()}"
                 storage_provenance = f"Oracle Enterprise Production Database [{db_name}.{schema_name.upper()}]"
+        elif db_type_clean in ("bigquery", "bq"):
+            provenance_banner = f"📊 Google BigQuery Sandbox | Project: nanopro-lakehouse-sandbox | Dataset: {schema_name} | Storage: Managed Columnar (Always Free Tier)"
+            storage_provenance = f"Google BigQuery Sandbox [nanopro-lakehouse-sandbox.{schema_name}] (Service-Account Connected)"
         elif db_type_clean == "postgres":
             provenance_banner = f"🐘 PostgreSQL Enterprise (127.0.0.1:5432/nanopro_db) | Schema: {schema_name.lower()} | Protocol: PostgreSQL v15 Native"
             storage_provenance = f"PostgreSQL Enterprise Local Instance [127.0.0.1:5432/nanopro_db -> {schema_name.lower()}]"
@@ -1464,7 +1467,7 @@ class SqlQueryStudioEngine:
         # Sanitize query for local mirror execution: replace qualified table names like schema.table with bare table
         # Only strip database/schema qualifiers preceding table references (FROM, JOIN, INTO, UPDATE, TABLE)
         # Preserve aliases like c.CUSTOMER_ID, a.BALANCE, t1.AMOUNT!
-        sanitized_query = q_strip.rstrip(";").strip()
+        sanitized_query = q_strip.rstrip(";").replace("`", "").strip()
         for _ in range(3):
             sanitized_query = re.sub(
                 r'\b(FROM|JOIN|INTO|UPDATE|TABLE)\s+([a-zA-Z0-9_\"\$]+\.)+([a-zA-Z0-9_\"\$]+)',

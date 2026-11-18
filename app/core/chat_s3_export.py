@@ -75,15 +75,18 @@ def _aws_config() -> Dict[str, str]:
     meta = cfg.get("metadata") or {}
     if isinstance(meta, str):
         meta = {}
+    bucket = (
+        os.environ.get("AWS_S3_BUCKET")
+        or str(meta.get("bucket") or cfg.get("database_name") or "")
+    ).strip()
+    # Legacy vault rows still carry the pre-account bucket name.
+    if bucket in ("", "nanopro-data-lake"):
+        bucket = DEFAULT_S3_BUCKET
     return {
         "access_key": (os.environ.get("AWS_ACCESS_KEY_ID") or str(cfg.get("username") or "")).strip(),
         "secret_key": (os.environ.get("AWS_SECRET_ACCESS_KEY") or str(cfg.get("secret_value") or "")).strip(),
         "region": (os.environ.get("AWS_DEFAULT_REGION") or str(meta.get("region") or "") or "ap-southeast-2").strip(),
-        "bucket": (
-            os.environ.get("AWS_S3_BUCKET")
-            or str(meta.get("bucket") or cfg.get("database_name") or "")
-            or DEFAULT_S3_BUCKET
-        ).strip(),
+        "bucket": bucket,
     }
 
 
@@ -176,6 +179,7 @@ def export_tables(bq_client: Any, s3: Any, bucket: str, schema: str, tables: Lis
                     "bytes": len(body),
                     "sha256": digest,
                     "status": "unchanged" if skipped else "uploaded",
+                    "columns": [{"name": f.name, "type": _duck_type(f)} for f in fields],
                 })
             except Exception as exc:
                 failures.append(f"{table}: {str(exc)[:160]}")

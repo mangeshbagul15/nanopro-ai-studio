@@ -1198,30 +1198,31 @@ def export_table_full_dataset(db_name: str, schema_name: str, table_name: str, f
 
 def execute_lab_code(language: str, code: str, limit: int = 500, target_db: Optional[str] = None, target_schema: Optional[str] = None) -> Dict[str, Any]:
     """
-    Executes Python Lakehouse ETL, Multi-DB SQL, PL/SQL or SnowSQL against selected database and schema.
+    Executes Python Lakehouse ETL, Multi-DB SQL, BigQuery SQL or SnowSQL against selected database and schema.
     Provides execution output table, console logs, execution time, and rows affected.
     """
     clean_code = code.strip()
     start_time = time.time()
     
     # Default DB and schema if not passed
-    db_name = target_db or ("BANK_DB" if "snow" in language.lower() else "MY_ORACLE_XE_LOCAL")
-    schema_name = target_schema or ("L0_STAGING" if "snow" in language.lower() else "XEPDB1")
+    is_bigquery_lang = "bigquery" in language.lower() or language.lower().strip() == "bq"
+    db_name = target_db or ("BANK_DB" if "snow" in language.lower() else "GOOGLE_BIGQUERY_SANDBOX")
+    schema_name = target_schema or ("L0_STAGING" if "snow" in language.lower() else "nanopro_cbs_bronze")
     
     # Resolve engine
     if "snow" in language.lower():
         engine = "snowflake"
-    elif "pl/sql" in language.lower() or "oracle" in language.lower():
-        engine = "oracle"
+    elif is_bigquery_lang:
+        engine = "bigquery"
     elif "postgres" in language.lower():
         engine = "postgres"
     elif "sqlite" in language.lower():
         engine = "sqlite"
     else:
-        engine = "snowflake" if "BANK_DB" in db_name else ("oracle" if "ORACLE" in db_name else "sqlite")
+        engine = "snowflake" if "BANK_DB" in db_name else ("bigquery" if "BIGQUERY" in db_name else "sqlite")
 
     is_sql_execution = (
-        any(k in language.lower() for k in ["sql", "snow", "pl/sql", "plsql", "postgres", "sqlite", "query"]) or
+        any(k in language.lower() for k in ["sql", "snow", "bigquery", "postgres", "sqlite", "query"]) or
         any(clean_code.upper().startswith(k) for k in ["SELECT", "WITH", "SHOW", "DESC", "DESCRIBE", "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "DROP"])
     )
     if is_sql_execution:

@@ -84,6 +84,12 @@ class _FakeService:
         self._guard()
         return {"DatabaseList": []}
 
+    def create_database(self, **kwargs):
+        return {}
+
+    def update_table(self, **kwargs):
+        return {}
+
     def list_work_groups(self, **kwargs):
         self._guard()
         return {"WorkGroups": []}
@@ -100,7 +106,8 @@ class _FakeService:
 def _manifest(dataset, tables):
     files = [
         {"table": name, "key": f"bronze/bigquery/{dataset}/{name}/{name}.parquet",
-         "rows": 10, "bytes": 1000, "sha256": "a" * 64, "status": "uploaded"}
+         "rows": 10, "bytes": 1000, "sha256": "a" * 64, "status": "uploaded",
+         "columns": [{"name": "id", "type": "BIGINT"}, {"name": "label", "type": "VARCHAR"}]}
         for name in tables
     ]
     return {
@@ -172,8 +179,40 @@ class BigQueryAwsPipelineTests(unittest.TestCase):
         self.assertEqual(result["aws_services"]["sqs"]["status"], "sent")
         self.assertEqual(result["aws_services"]["dynamodb"]["status"], "recorded")
         self.assertEqual(result["aws_services"]["cloudwatch"]["status"], "published")
+        self.assertEqual(result["aws_services"]["glue"]["status"], "registered")
+        self.assertEqual(result["aws_services"]["glue"]["tables"], 3)
         prefixes = {item[2] for item in exported}
         self.assertEqual(prefixes, {"bronze/bigquery/nanopro_cbs_bronze", "bronze/bigquery/nanopro_studio"})
+
+    def test_register_catalog_maps_types_and_locations(self):
+        cfg = {"access_key": "a", "secret_key": "b", "region": "ap-southeast-2", "bucket": "nanopro-data-lake"}
+        captured = []
+
+        class _Glue(_FakeService):
+            def create_table(self, **kwargs):
+                captured.append(kwargs["TableInput"])
+                return {}
+
+        files = [{
+            "table": "Customers",
+            "key": "bronze/bigquery/nanopro_cbs_bronze/customers/customers.parquet",
+            "columns": [
+                {"name": "CUSTOMER_ID", "type": "VARCHAR"},
+                {"name": "BALANCE", "type": "DECIMAL(10,2)"},
+                {"name": "OPENED_ON", "type": "DATE"},
+            ],
+        }]
+        with patch.object(pipeline, "_aws_client", return_value=_Glue()):
+            res = pipeline._register_catalog(cfg, files)
+
+        self.assertEqual(res["status"], "registered")
+        self.assertEqual(res["database"], "nanopro_bronze")
+        table = captured[0]
+        self.assertEqual(table["Name"], "customers")
+        self.assertEqual(table["StorageDescriptor"]["Location"],
+                         "s3://nanopro-data-lake/bronze/bigquery/nanopro_cbs_bronze/customers/")
+        types = {col["Name"]: col["Type"] for col in table["StorageDescriptor"]["Columns"]}
+        self.assertEqual(types, {"customer_id": "string", "balance": "decimal(10,2)", "opened_on": "date"})
 
     def test_run_pipeline_bigquery_listing_failure_is_honest(self):
         cfg = {"access_key": "a", "secret_key": "b", "region": "ap-southeast-2", "bucket": "nanopro-data-lake"}

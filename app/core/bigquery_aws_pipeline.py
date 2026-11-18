@@ -25,6 +25,7 @@ from app.core.logger import log_event
 SQS_QUEUE_NAME = "nanopro-pipeline-events"
 DDB_TABLE_NAME = "nanopro_pipeline_runs"
 CW_NAMESPACE = "NanoPro/BigQueryAWS"
+GLUE_DATABASE = "nanopro_bronze"
 EXPORT_ROOT = "bronze/bigquery"
 RUN_ID_FORMAT = "%Y%m%dT%H%M%SZ"
 
@@ -134,6 +135,86 @@ def _cloudwatch_metrics(config: Dict[str, str], run: Dict[str, Any]) -> Dict[str
         return {"status": "published", "namespace": CW_NAMESPACE, "metrics": 4}
     except Exception as exc:
         return {"status": "unavailable", "namespace": CW_NAMESPACE, "error": _err(exc)}
+
+
+def _athena_type(duck_type: str) -> str:
+    t = (duck_type or "VARCHAR").upper()
+    if t.startswith("DECIMAL"):
+        return "decimal" + t[t.index("("):] if "(" in t else "decimal(38,0)"
+    return {
+        "VARCHAR": "string",
+        "BLOB": "binary",
+        "BIGINT": "bigint",
+        "DOUBLE": "double",
+        "BOOLEAN": "boolean",
+        "DATE": "date",
+        "TIMESTAMP": "timestamp",
+        "TIMESTAMPTZ": "timestamp",
+        "TIME": "string",
+    }.get(t, "string")
+
+
+def _register_catalog(config: Dict[str, str], files: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Register the exported Parquet in Glue so Athena can query it."""
+    registered = 0
+    errors: List[str] = []
+    try:
+        glue = _aws_client(config, "glue")
+    except Exception as exc:
+        return {"status": "unavailable", "database": GLUE_DATABASE, "error": _err(exc)}
+
+    try:
+        glue.create_database(DatabaseInput={"Name": GLUE_DATABASE, "Description": "NanoPro BigQuery bronze exports"})
+    except Exception as exc:
+        if "AlreadyExists" not in type(exc).__name__ and "already exists" not in _err(exc).lower():
+            return {"status": "unavailable", "database": GLUE_DATABASE, "error": _err(exc)}
+
+    for item in files:
+        columns = item.get("columns") or []
+        key = str(item.get("key") or "")
+        if not columns or "/" not in key:
+            continue
+        location = f"s3://{config['bucket']}/{key.rsplit('/', 1)[0]}/"
+        table_input = {
+            "Name": str(item.get("table") or "").lower(),
+            "TableType": "EXTERNAL_TABLE",
+            "Parameters": {"classification": "parquet", "EXTERNAL": "TRUE"},
+            "StorageDescriptor": {
+                "Columns": [
+                    {"Name": str(col["name"]).lower(), "Type": _athena_type(col["type"]), "Comment": ""}
+                    for col in columns
+                ],
+                "Location": location,
+                "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+                "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+                "SerdeInfo": {
+                    "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+                    "Parameters": {"serialization.format": "1"},
+                },
+            },
+        }
+        try:
+            glue.create_table(DatabaseName=GLUE_DATABASE, TableInput=table_input)
+            registered += 1
+        except Exception as exc:
+            if "AlreadyExists" in type(exc).__name__:
+                try:
+                    glue.update_table(DatabaseName=GLUE_DATABASE, TableInput=table_input, SkipArchive=True)
+                    registered += 1
+                except Exception as upd_exc:
+                    errors.append(f"{table_input['Name']}: {_err(upd_exc)}")
+            else:
+                errors.append(f"{table_input['Name']}: {_err(exc)}")
+
+    result: Dict[str, Any] = {
+        "status": "registered" if registered and not errors else ("partial" if registered else "unavailable"),
+        "database": GLUE_DATABASE,
+        "tables": registered,
+        "catalog": f"athena://{GLUE_DATABASE}",
+    }
+    if errors:
+        result["errors"] = errors[:5]
+    return result
 
 
 def capabilities(force: bool = False) -> Dict[str, Any]:
@@ -298,6 +379,7 @@ def run_pipeline(datasets: Optional[List[str]] = None) -> Dict[str, Any]:
         "bytes": payload["bytes"],
         "at": _now(),
     }
+    payload["aws_services"]["glue"] = _register_catalog(config, all_files)
     payload["aws_services"]["sqs"] = _sqs_send(config, event)
     payload["aws_services"]["dynamodb"] = _dynamodb_record(config, payload)
     payload["aws_services"]["cloudwatch"] = _cloudwatch_metrics(config, payload)
