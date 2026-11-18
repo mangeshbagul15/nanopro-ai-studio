@@ -16226,7 +16226,7 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
                                 <div style="font-size:9px; color:#94A3B8; text-transform:uppercase;">Connected DBs</div>
 
-                                <div style="font-size:12.5px; font-weight:800; color:#A855F7;">6 (Snowflake, Oracle 23ai, Neon, S3, BigQuery, SQLite)</div>
+                                <div style="font-size:12.5px; font-weight:800; color:#A855F7;">5 (Snowflake, Neon, S3, BigQuery, SQLite)</div>
 
                             </div>
 
@@ -43589,7 +43589,7 @@ body:has(#view-data_modeling_ai.active) #main-content-viewport,
 
             { id: "data_engineer", name: "Data Engineering Chief", pod: "Group B", team: "24 Ingestion Agents", icon: "❄️", color: "#06B6D4" },
 
-            { id: "lakehouse_chief", name: "Snowflake/Oracle Lead", pod: "Group C", team: "18 Cloud Warehouses", icon: "🏛️", color: "#6366F1" },
+            { id: "lakehouse_chief", name: "Snowflake/BigQuery Lead", pod: "Group C", team: "18 Cloud Warehouses", icon: "🏛️", color: "#6366F1" },
 
             { id: "cyber_chief", name: "Cyber Defense Chief", pod: "Group D", team: "16 Ethical Security", icon: "🛡️", color: "#EF4444" },
 
@@ -46342,7 +46342,7 @@ function navigateHistory(direction) {
 
                         <div style="font-weight:700; color:#38BDF8; margin-bottom:6px;">Technical Architecture &amp; Execution Specifications:</div>
 
-                        <div>• Connections: <code>${escapeHtml(plan.required_connections || 'NANO_PRO_SNOWFLAKE, Oracle XE, AWS S3')}</code></div>
+                        <div>• Connections: <code>${escapeHtml(plan.required_connections || 'NANO_PRO_SNOWFLAKE, GOOGLE_BIGQUERY_SANDBOX, AWS_S3_DATA_LAKE')}</code></div>
 
                         <div>• Execution Model: Pre-load Python schema validation AST + In-warehouse Snowflake SQL transforms</div>
 
@@ -49376,7 +49376,7 @@ function navigateHistory(direction) {
 
             if (typeof showStudioToast === 'function') {
 
-                showStudioToast('Testing All Services', 'Running parallel connection verification across Snowflake, DuckDB, BigQuery, Neon, Oracle XE, AWS & Telegram...', 'info');
+                showStudioToast('Testing All Services', 'Running parallel connection verification across Snowflake, DuckDB, BigQuery, Neon, AWS & Telegram...', 'info');
 
             }
 
@@ -57353,13 +57353,13 @@ async function submitAddDatabaseForm() {
 
             // Dynamically register in SQL Studio Catalog cache with distinct tables
 
-            const eng = (type || 'oracle').toLowerCase();
+            const eng = (type || 'postgres').toLowerCase();
 
-            const engKey = eng.includes('oracle') ? 'oracle' : (eng.includes('snow') ? 'snowflake' : (eng.includes('post') ? 'postgres' : 'sqlite'));
+            const engKey = eng.includes('snow') ? 'snowflake' : (eng.includes('post') || eng.includes('neon') ? 'postgres' : 'sqlite');
 
             if (SQL_CATALOG_CACHE && SQL_CATALOG_CACHE[engKey]) {
 
-                const sName = dbName || (engKey === 'oracle' ? 'XEPDB1' : (engKey === 'snowflake' ? 'L0_STAGING' : 'public'));
+                const sName = dbName || (engKey === 'snowflake' ? 'L0_STAGING' : 'public');
 
                 const cleanPrefix = name.toUpperCase().replace(/[^A-Z0-9_]/g, '').slice(0, 12);
 
@@ -57463,7 +57463,7 @@ function closeQuickPasswordModal() {
 
 async function submitQuickPasswordForm() {
 
-    const conn = document.getElementById('quickPwdConn')?.value || 'MY_ORACLE_XE_LOCAL';
+    const conn = document.getElementById('quickPwdConn')?.value || '';
 
     const pwd = (document.getElementById('quickPwdInput')?.value || '').trim();
 
@@ -59905,7 +59905,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 { name: 'Snowflake (COMPUTE_WH)', color: '#38BDF8', angle: 0, dist: 130 },
 
-                { name: 'Oracle XE (XEPDB1)', color: '#EF4444', angle: (Math.PI * 2) / 5, dist: 140 },
+                { name: 'Google BigQuery', color: '#EF4444', angle: (Math.PI * 2) / 5, dist: 140 },
 
                 { name: 'AWS S3 Lakehouse', color: '#F59E0B', angle: (Math.PI * 4) / 5, dist: 130 },
 
@@ -62469,7 +62469,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 text: '💡 Production Data Engineering Tip: Always specify `ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW` when calculating running balances in SQL window functions.\n\nDefaulting to `RANGE` causes duplicate timestamp rows to aggregate together into identical totals, creating severe ledger balancing bugs in banking reconciliation!',
 
-                specs: 'Domain: BFSI &bull; Engine: Snowflake / Oracle &bull; Impact: 100% Deterministic Totals',
+                specs: 'Domain: BFSI &bull; Engine: Snowflake / BigQuery &bull; Impact: 100% Deterministic Totals',
 
                 likes: 620,
 
@@ -64581,7 +64581,7 @@ ${d.preview}`;
 
                 resultBox.style.border = '1px solid #0284C7';
 
-                resultBox.innerHTML = '<span class="spinner-sm"></span> Testing live pipeline flow: Oracle XE ➔ S3 / Staging Lake ➔ Snowflake Data Warehouse ➔ Audit Log...';
+                resultBox.innerHTML = '<span class="spinner-sm"></span> Testing live pipeline flow: BigQuery ➔ S3 / Staging Lake ➔ Snowflake Data Warehouse ➔ Audit Log...';
 
             }
 
@@ -65557,7 +65557,7 @@ ${d.preview}`;
 
                 // TIER 1: Heterogeneous Multi-Cloud Source Databases & Storage (5 Sources)
 
-                { id: 'node_oracle', name: 'Oracle XE CBS', icon: '🏛️', layer: 'Core Banking (1521)', color: '#F59E0B', x: W * 0.08, y: H * 0.16, r: 21, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.9%' },
+                { id: 'node_bigquery', name: 'BigQuery CBS', icon: '📊', layer: 'nanopro_cbs_bronze', color: '#4285F4', x: W * 0.08, y: H * 0.16, r: 21, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.9%' },
 
                 { id: 'node_aws_s3', name: 'AWS S3 Data Lake', icon: '☁️', layer: 'ap-southeast-2 Snappy', color: '#FF9900', x: W * 0.08, y: H * 0.32, r: 21, throughput: '142,500 rec/s', latency: '28.4 ms', health: '100%' },
 
@@ -65609,7 +65609,7 @@ ${d.preview}`;
 
             window.lakehouseConduits = [
 
-                { fromId: 'node_oracle', toId: 'node_ingestion', color: '#F59E0B' },
+                { fromId: 'node_bigquery', toId: 'node_ingestion', color: '#4285F4' },
 
                 { fromId: 'node_aws_s3', toId: 'node_ingestion', color: '#FF9900' },
 
@@ -65853,7 +65853,7 @@ ${d.preview}`;
 
                         // TIER 1: Heterogeneous Multi-Cloud Source Databases & Storage (5 Sources)
 
-                        { id: 'node_oracle', name: 'Oracle XE CBS', icon: '🏛️', layer: 'Core Banking (1521)', color: '#F59E0B', x: W * 0.08, y: H * 0.16, r: 21, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.9%' },
+                        { id: 'node_bigquery', name: 'BigQuery CBS', icon: '📊', layer: 'nanopro_cbs_bronze', color: '#4285F4', x: W * 0.08, y: H * 0.16, r: 21, throughput: '142,500 rec/s', latency: '1.2 ms', health: '99.9%' },
 
                         { id: 'node_aws_s3', name: 'AWS S3 Data Lake', icon: '☁️', layer: 'ap-southeast-2 Snappy', color: '#FF9900', x: W * 0.08, y: H * 0.32, r: 21, throughput: '142,500 rec/s', latency: '28.4 ms', health: '100%' },
 
@@ -65907,7 +65907,7 @@ ${d.preview}`;
 
                     window.lakehouseConduits = [
 
-                        { fromId: 'node_oracle', toId: 'node_ingestion', color: '#F59E0B' },
+                        { fromId: 'node_bigquery', toId: 'node_ingestion', color: '#4285F4' },
 
                         { fromId: 'node_aws_s3', toId: 'node_ingestion', color: '#FF9900' },
 
