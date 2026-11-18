@@ -7222,6 +7222,22 @@ async def api_test_aws_connection():
 
 
 
+@app.post('/api/aws/s3_probe')
+
+async def api_aws_s3_probe(request: Request):
+
+    """Writes and deletes a probe object in the configured S3 bucket."""
+
+    from app.core.api_auth import require_session
+
+    require_session(request)
+
+    from app.core.connection_manager import connection_manager
+
+    return JSONResponse(connection_manager.probe_s3_write())
+
+
+
 @app.post('/api/connections/test/telegram')
 
 async def api_test_telegram_connection_vault():

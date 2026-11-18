@@ -1207,6 +1207,43 @@ class ConnectionManager:
         self._record_connection_result(conn_name, "cloud", "Not Configured", duration, None, None, bucket_name, None, res["message"], res)
         return res
 
+    def probe_s3_write(self) -> Dict[str, Any]:
+        """Writes a tiny probe object into the configured bucket and deletes it again."""
+        conn_name = "AWS_S3_DATA_LAKE"
+        cfg = self.get_connection_config(conn_name, mask=False)
+
+        access_key = (os.environ.get("AWS_ACCESS_KEY_ID") or (cfg.get("username") if cfg else "")).strip()
+        secret_key = (os.environ.get("AWS_SECRET_ACCESS_KEY") or (cfg.get("secret_value") if cfg else "")).strip()
+        region = (os.environ.get("AWS_DEFAULT_REGION") or (cfg.get("metadata", {}).get("region") if cfg else "") or "ap-southeast-2").strip()
+        bucket_name = (os.environ.get("AWS_S3_BUCKET") or (cfg.get("database_name") if cfg else "") or (cfg.get("metadata", {}).get("bucket") if cfg else "") or "nanopro-data-lake").strip()
+        key = "_probe/nanopro-write-test.txt"
+        body = f"nanopro s3 write probe {time.strftime('%Y-%m-%d %H:%M:%S')}"
+        result: Dict[str, Any] = {"bucket": bucket_name, "region": region, "key": key}
+
+        if not (access_key and secret_key):
+            result.update(status="error", error_code="MISSING_AWS_CREDENTIALS",
+                          message="AWS credentials are not configured for AWS_S3_DATA_LAKE.")
+            return result
+
+        try:
+            import boto3
+            s3 = boto3.Session(
+                region_name=region,
+                aws_access_key_id=access_key,
+                aws_secret_access_key=secret_key,
+            ).client("s3")
+            s3.put_object(Bucket=bucket_name, Key=key, Body=body.encode("utf-8"), ContentType="text/plain")
+            head = s3.head_object(Bucket=bucket_name, Key=key)
+            s3.delete_object(Bucket=bucket_name, Key=key)
+            result.update(status="success", put=True, head_bytes=head.get("ContentLength"),
+                          deleted=True, message="Probe object written, read and deleted.")
+            return result
+        except Exception as exc:
+            msg = str(exc)
+            code = "S3_WRITE_DENIED" if ("AccessDenied" in msg or "403" in msg) else "S3_PROBE_FAILED"
+            result.update(status="error", error_code=code, message=msg[:500])
+            return result
+
     def test_telegram_connection(self) -> Dict[str, Any]:
         """Validates Telegram Bot API token via getMe endpoint."""
         start_time = time.time()
