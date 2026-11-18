@@ -8280,6 +8280,55 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
   const ORCH_API = "/api/banking/orchestrator";
   window.ailabOrchState = { overview: null, timer: null, alertsFilled: false };
 
+  // Native alert/confirm/prompt are suppressed in embedded/iframe browsers, so the
+  // orchestrator uses its own dialog and toast instead.
+  function orchDialog(message, defaultValue) {
+    return new Promise(resolve => {
+      const isPrompt = defaultValue !== undefined;
+      const wrap = document.createElement("div");
+      wrap.style.cssText = "position:fixed;inset:0;z-index:30050;background:rgba(2,6,23,0.72);display:flex;align-items:center;justify-content:center;padding:18px;";
+      wrap.innerHTML = `
+        <div style="width:min(440px,92vw);background:#0F172A;border:1px solid rgba(56,189,248,0.35);border-radius:12px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,0.55);">
+          <div style="font-size:12.5px;color:#E2E8F0;line-height:1.5;white-space:pre-line;">${orchEsc(message)}</div>
+          ${isPrompt ? `<input id="orchDialogInput" value="${orchEsc(defaultValue)}" style="margin-top:12px;width:100%;box-sizing:border-box;background:#020617;border:1px solid #334155;border-radius:7px;padding:8px 10px;color:#F8FAFC;font-size:12.5px;" />` : ""}
+          <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">
+            <button type="button" id="orchDialogCancel" class="ailab-code-btn" style="font-size:11.5px;color:#94A3B8;">Cancel</button>
+            <button type="button" id="orchDialogOk" class="ailab-code-btn" style="font-size:11.5px;color:#34D399;border-color:rgba(16,185,129,0.45);">OK</button>
+          </div>
+        </div>`;
+      const done = value => { wrap.remove(); resolve(value); };
+      wrap.querySelector("#orchDialogCancel").onclick = () => done(null);
+      wrap.querySelector("#orchDialogOk").onclick = () => {
+        const input = wrap.querySelector("#orchDialogInput");
+        done(input ? input.value : true);
+      };
+      wrap.addEventListener("mousedown", e => { if (e.target === wrap) done(null); });
+      wrap.addEventListener("keydown", e => {
+        if (e.key === "Escape") done(null);
+        if (e.key === "Enter") wrap.querySelector("#orchDialogOk").click();
+      });
+      document.body.appendChild(wrap);
+      const input = wrap.querySelector("#orchDialogInput");
+      if (input) { input.focus(); input.select(); }
+      else { wrap.querySelector("#orchDialogOk").focus(); }
+    });
+  }
+
+  window.ailabOrchToast = function(text, color) {
+    let box = document.getElementById("ailabOrchToast");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "ailabOrchToast";
+      box.style.cssText = "position:fixed;right:18px;bottom:18px;z-index:30060;max-width:min(460px,90vw);padding:10px 14px;border-radius:9px;background:#0F172A;border:1px solid rgba(255,255,255,0.12);color:#E2E8F0;font-size:12px;line-height:1.45;box-shadow:0 12px 40px rgba(0,0,0,0.5);display:none;";
+      document.body.appendChild(box);
+    }
+    box.textContent = text;
+    box.style.color = color || "#E2E8F0";
+    box.style.display = "block";
+    clearTimeout(box._timer);
+    box._timer = setTimeout(() => { box.style.display = "none"; }, 6000);
+  };
+
   function orchEsc(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, ch => (
       { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]
@@ -8475,17 +8524,19 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
   };
 
   window.ailabOrchRun = async function(dagId) {
+    ailabOrchToast(`Dispatching ${dagId}...`, "#38BDF8");
     try {
       const res = await fetch(ORCH_API + "/dag/run", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dag_id: dagId, mode: "incremental" })
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.detail || "Run failed"); return; }
+      if (!res.ok) { ailabOrchToast(data.detail || "Run failed", "#F87171"); return; }
       const footer = document.getElementById("airflowFooterLeft");
       if (footer) footer.textContent = data.message || "Dispatched";
+      ailabOrchToast(data.message || `${dagId} dispatched`, data.status === "dispatched" ? "#34D399" : "#FBBF24");
       setTimeout(() => ailabOrchRefreshAll(true), 2000);
-    } catch (err) { alert("Run error: " + err.message); }
+    } catch (err) { ailabOrchToast("Run error: " + err.message, "#F87171"); }
   };
 
   window.ailabOrchPause = async function(dagId) {
@@ -8495,39 +8546,44 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
         body: JSON.stringify({ dag_id: dagId })
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.detail || "Pause failed"); return; }
+      if (!res.ok) { ailabOrchToast(data.detail || "Pause failed", "#F87171"); return; }
+      ailabOrchToast(`${dagId}: ${data.state || "updated"}`, data.state === "PAUSED" ? "#FBBF24" : "#34D399");
       await ailabOrchRefreshAll(true);
-    } catch (err) { alert("Pause error: " + err.message); }
+    } catch (err) { ailabOrchToast("Pause error: " + err.message, "#F87171"); }
   };
 
   window.ailabOrchRollback = async function(dagId) {
     let message = "Rebuild this DAG from the S3 bronze source of truth? Downstream layers are recreated with CREATE OR REPLACE.";
     if (dagId === "sftp_to_s3") message = "Purge the latest SFTP batch? Its bronze Parquet and Snowflake L0/L1 tables are dropped.";
-    if (!confirm(message)) return;
+    if (!(await orchDialog(message))) return;
+    ailabOrchToast(`Rolling back ${dagId}...`, "#FBBF24");
     try {
       const res = await fetch(ORCH_API + "/dag/rollback", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dag_id: dagId, target_layer: "", confirm: true })
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.detail || "Rollback failed"); return; }
-      alert(data.message || "Rollback finished");
+      if (!res.ok) { ailabOrchToast(data.detail || "Rollback failed", "#F87171"); return; }
+      ailabOrchToast(data.message || "Rollback finished", "#34D399");
       await ailabOrchRefreshAll(true);
-    } catch (err) { alert("Rollback error: " + err.message); }
+    } catch (err) { ailabOrchToast("Rollback error: " + err.message, "#F87171"); }
   };
 
   window.ailabOrchEditCycle = async function(cycle, current) {
-    const value = prompt(`${cycle} cycle time (HH:MM IST):`, current || "06:00");
+    const value = await orchDialog(`${cycle} cycle time (HH:MM IST):`, current || "06:00");
     if (!value) return;
+    const at = String(value).trim();
+    if (!/^(?:[01]?\d|2[0-3]):[0-5]\d$/.test(at)) { ailabOrchToast("Use HH:MM format, e.g. 06:00", "#F87171"); return; }
     try {
       const res = await fetch(ORCH_API + "/schedule", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cycle, at: value.trim() })
+        body: JSON.stringify({ cycle, at: at })
       });
       const data = await res.json();
-      if (!res.ok) { alert(data.detail || "Schedule update failed"); return; }
+      if (!res.ok) { ailabOrchToast(data.detail || "Schedule update failed", "#F87171"); return; }
+      ailabOrchToast(`${cycle} scheduled at ${at} IST`, "#34D399");
       await ailabOrchRefreshAll(true);
-    } catch (err) { alert("Schedule error: " + err.message); }
+    } catch (err) { ailabOrchToast("Schedule error: " + err.message, "#F87171"); }
   };
 
   window.ailabOrchRenderSftp = function(sftp) {
@@ -8664,7 +8720,8 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
   };
 
   window.ailabOrchSftpRollback = async function(key) {
-    if (!confirm(`Purge ${key}?\n\nThis drops its bronze Parquet and Snowflake L0/L1 tables. The landing file is kept.`)) return;
+    if (!(await orchDialog(`Purge ${key}?\n\nThis drops its bronze Parquet and Snowflake L0/L1 tables. The landing file is kept.`))) return;
+    ailabSftpMsg(`Rolling back ${key}...`, "#FBBF24");
     try {
       const res = await fetch(ORCH_API + "/sftp/rollback", {
         method: "POST", headers: { "Content-Type": "application/json" },
