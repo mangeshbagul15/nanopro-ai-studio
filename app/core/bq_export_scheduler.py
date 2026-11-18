@@ -59,22 +59,30 @@ def _loop() -> None:
     time.sleep(90)  # let the boot sequence finish first
     while True:
         if _enabled():
+            handled = False
             try:
-                result = run_once()
-                try:
-                    from app.core.cron_gateway_router import _record_cron_run
+                from app.core import bank_batch_cycles
 
-                    job_key = "BQ2AWS_SCHED_" + str(result.get("run_id") or "")
-                    _record_cron_run(job_key, str(result.get("status") or "").upper(), {
-                        "summary": result.get("summary"),
-                        "tables": len(result.get("tables") or []),
-                        "rows": result.get("rows"),
-                    })
-                except Exception:
-                    pass
+                handled = bank_batch_cycles.poll() is not None
             except Exception as exc:
-                STATE["last_attempt"] = time.time()
-                log_event(f"[BQExport] run failed: {exc}", level="WARNING", component="BQExportScheduler")
+                log_event(f"[BQExport] batch poll failed: {exc}", level="WARNING", component="BQExportScheduler")
+            if not handled:
+                try:
+                    result = run_once()
+                    try:
+                        from app.core.cron_gateway_router import _record_cron_run
+
+                        job_key = "BQ2AWS_SCHED_" + str(result.get("run_id") or "")
+                        _record_cron_run(job_key, str(result.get("status") or "").upper(), {
+                            "summary": result.get("summary"),
+                            "tables": len(result.get("tables") or []),
+                            "rows": result.get("rows"),
+                        })
+                    except Exception:
+                        pass
+                except Exception as exc:
+                    STATE["last_attempt"] = time.time()
+                    log_event(f"[BQExport] run failed: {exc}", level="WARNING", component="BQExportScheduler")
         time.sleep(_interval_seconds())
 
 

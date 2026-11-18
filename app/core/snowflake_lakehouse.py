@@ -18,6 +18,7 @@ L1_SCHEMA = "L1_HARMONIZED"
 L2_SCHEMA = "L2_CURATED"
 WAREHOUSE = "COMPUTE_WH"
 AUDIT_COLUMNS = ("_RUN_ID", "_LOADED_AT", "_SOURCE_KEY")
+BATCH_TABLE = "BATCH_CONTROL"
 
 # Business key per CBS table. L1 keeps exactly one row per key so that a
 # re-exported snapshot cannot multiply customers, accounts or transactions.
@@ -486,3 +487,95 @@ def sync(files: Optional[List[Dict[str, Any]]] = None, run_id: str = "") -> Dict
             connection.close()
         except Exception:
             pass
+
+
+# ----------------------------------------------------------------------------
+# Batch control — BOD / SOD / T1 / EOD ledger
+# ----------------------------------------------------------------------------
+def _batch_fq(database: str) -> str:
+    return f"{database}.{L2_SCHEMA}.{BATCH_TABLE}"
+
+
+def record_batch(cycle: str, business_date: str, status: str, trigger: str = "scheduler",
+                 run_id: str = "", tables: int = 0, rows: int = 0,
+                 details: Optional[Dict[str, Any]] = None,
+                 started_at: Optional[Any] = None, finished_at: Optional[Any] = None) -> Dict[str, Any]:
+    """Upsert one batch row into L2_CURATED.BATCH_CONTROL (idempotent per cycle+date)."""
+    import json
+    from datetime import datetime, timezone
+    from app.core import snowflake_client
+
+    database = str(snowflake_client.load_config().get("database") or "BANK_DB").strip()
+    batch_id = f"{business_date}-{cycle.upper()}"
+    started = started_at or datetime.now(timezone.utc)
+    finished = finished_at or datetime.now(timezone.utc)
+
+    def _ts(value: Any) -> str:
+        return "TO_TIMESTAMP_NTZ(" + _lit(value.astimezone(timezone.utc).replace(tzinfo=None).isoformat(sep=" ")) + ")"
+
+    payload = json.dumps(details or {}, default=str)[:4000]
+    connection = _connect()
+    try:
+        cursor = connection.cursor()
+        _ensure_layers(cursor, database)
+        fq = _batch_fq(database)
+        cursor.execute(
+            f"CREATE TABLE IF NOT EXISTS {fq} ("
+            "BATCH_ID VARCHAR, CYCLE VARCHAR, BUSINESS_DATE DATE, STATUS VARCHAR, TRIGGER VARCHAR, "
+            "RUN_ID VARCHAR, EXPORTED_TABLES NUMBER(38,0), EXPORTED_ROWS NUMBER(38,0), DETAILS VARCHAR, "
+            "STARTED_AT TIMESTAMP_NTZ, FINISHED_AT TIMESTAMP_NTZ, RECORDED_AT TIMESTAMP_NTZ)"
+        )
+        cursor.execute(
+            f"MERGE INTO {fq} t USING (SELECT "
+            f"{_lit(batch_id)} AS BATCH_ID, {_lit(cycle.upper())} AS CYCLE, "
+            f"TO_DATE({_lit(business_date)}) AS BUSINESS_DATE, {_lit(status.upper())} AS STATUS, "
+            f"{_lit(trigger)} AS TRIGGER, {_lit(run_id)} AS RUN_ID, {int(tables)} AS EXPORTED_TABLES, "
+            f"{int(rows)} AS EXPORTED_ROWS, {_lit(payload)} AS DETAILS, {_ts(started)} AS STARTED_AT, "
+            f"{_ts(finished)} AS FINISHED_AT, CURRENT_TIMESTAMP() AS RECORDED_AT) s "
+            "ON t.BATCH_ID = s.BATCH_ID "
+            "WHEN MATCHED THEN UPDATE SET CYCLE = s.CYCLE, BUSINESS_DATE = s.BUSINESS_DATE, STATUS = s.STATUS, "
+            "TRIGGER = s.TRIGGER, RUN_ID = s.RUN_ID, EXPORTED_TABLES = s.EXPORTED_TABLES, "
+            "EXPORTED_ROWS = s.EXPORTED_ROWS, DETAILS = s.DETAILS, STARTED_AT = s.STARTED_AT, "
+            "FINISHED_AT = s.FINISHED_AT, RECORDED_AT = s.RECORDED_AT "
+            "WHEN NOT MATCHED THEN INSERT (BATCH_ID, CYCLE, BUSINESS_DATE, STATUS, TRIGGER, RUN_ID, "
+            "EXPORTED_TABLES, EXPORTED_ROWS, DETAILS, STARTED_AT, FINISHED_AT, RECORDED_AT) "
+            "VALUES (s.BATCH_ID, s.CYCLE, s.BUSINESS_DATE, s.STATUS, s.TRIGGER, s.RUN_ID, "
+            "s.EXPORTED_TABLES, s.EXPORTED_ROWS, s.DETAILS, s.STARTED_AT, s.FINISHED_AT, s.RECORDED_AT)"
+        )
+        connection.commit()
+        return {"status": "recorded", "batch_id": batch_id, "table": fq}
+    finally:
+        try:
+            connection.close()
+        except Exception:
+            pass
+
+
+def batch_history(business_date: str = "", limit: int = 40) -> List[Dict[str, Any]]:
+    """Read recent batch rows, newest first. Empty list when Snowflake is unavailable."""
+    from app.core import snowflake_client
+
+    database = str(snowflake_client.load_config().get("database") or "BANK_DB").strip()
+    where = f"WHERE BUSINESS_DATE = TO_DATE({_lit(business_date)}) " if business_date else ""
+    connection = _connect()
+    try:
+        cursor = connection.cursor()
+        cursor.execute(
+            f"SELECT BATCH_ID, CYCLE, TO_VARCHAR(BUSINESS_DATE), STATUS, TRIGGER, RUN_ID, "
+            f"EXPORTED_TABLES, EXPORTED_ROWS, DETAILS, TO_VARCHAR(STARTED_AT), TO_VARCHAR(FINISHED_AT) "
+            f"FROM {_batch_fq(database)} {where}ORDER BY RECORDED_AT DESC LIMIT {max(1, int(limit))}"
+        )
+        rows = cursor.fetchall()
+    finally:
+        try:
+            connection.close()
+        except Exception:
+            pass
+    return [
+        {
+            "batch_id": row[0], "cycle": row[1], "business_date": row[2], "status": row[3],
+            "trigger": row[4], "run_id": row[5], "tables": row[6], "rows": row[7],
+            "details": row[8], "started_at": row[9], "finished_at": row[10],
+        }
+        for row in rows
+    ]

@@ -3982,10 +3982,11 @@ body.in-global_ai_lab .nano-dynamic-island {
 
       html += `
         <div class="ailab-tree-node" style="margin-bottom:6px;">
-          <div class="ailab-tree-row" style="font-weight:700;color:#F8FAFC;" onclick="ailabToggleTreeNode('${escapeHtml(dbKey)}')">
+          <div class="ailab-tree-row" style="font-weight:700;color:#F8FAFC;" title="${escapeHtml(db.detail || db.error || "")}" onclick="ailabToggleTreeNode('${escapeHtml(dbKey)}')">
             <span class="ailab-tree-arrow ${isOpen ? 'is-expanded' : ''}">▶</span>
             <span>${db.icon || '🗄️'}</span>
             <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(db.name)}</span>
+            ${db.error ? '<span title="' + escapeHtml(db.error) + '" style="color:#F87171;font-size:10px;">⚠</span>' : ""}
           </div>
           <div class="ailab-tree-children ${isOpen ? 'is-expanded' : ''}" id="child_${escapeHtml(dbKey)}">
             ${schemasHtml}

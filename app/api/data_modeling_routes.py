@@ -786,7 +786,25 @@ def api_explorer_catalog(request: Request):
         catalog = dm.catalog_snapshot(ttl=8.0)
     except Exception as exc:
         return JSONResponse({"status": "error", "message": str(exc)[:300]}, status_code=500)
-    return JSONResponse({"status": "success", "databases": _explorer_databases(catalog)})
+    databases = _explorer_databases(catalog)
+    pipeline_generated_at = ""
+    try:
+        from app.core import pipeline_catalog
+
+        snapshot = pipeline_catalog.snapshot()
+        layers = [layer for layer in snapshot.get("layers") or [] if layer.get("schemas")]
+        pipeline_generated_at = str(snapshot.get("generated_at") or "")
+        # The pipeline view carries real row counts and columns, so it replaces
+        # the generic per-engine nodes instead of duplicating them.
+        covered = {str(layer.get("kind") or "") for layer in layers}
+        databases = layers + [db for db in databases if str(db.get("kind") or "") not in covered]
+    except Exception as exc:
+        pipeline_generated_at = f"unavailable: {str(exc)[:200]}"
+    return JSONResponse({
+        "status": "success",
+        "databases": databases,
+        "pipeline_generated_at": pipeline_generated_at,
+    })
 
 
 @explorer_router.get("/table")

@@ -291,6 +291,74 @@ async def cron_bigquery_to_aws(request: Request):
         "message": "BigQuery to AWS export started; results land in the cron audit ledger.",
     })
 
+@router.get("/pipeline/status")
+async def pipeline_batch_status():
+    """Batch ledger: today's BOD/SOD/T1/EOD state plus the last export run."""
+    from app.core import bank_batch_cycles
+    from app.core.bigquery_aws_pipeline import last_run
+    from app.core.bq_export_scheduler import STATE as SCHED_STATE, _interval_seconds
+
+    try:
+        batch = bank_batch_cycles.status()
+    except Exception as exc:
+        batch = {"status": "error", "error": str(exc)[:200]}
+    return JSONResponse(content={
+        "status": "ONLINE",
+        "batch": batch,
+        "scheduler": {
+            "armed": bool(SCHED_STATE.get("armed")),
+            "interval_min": _interval_seconds() // 60,
+            "last_attempt": SCHED_STATE.get("last_attempt"),
+        },
+        "last_export": last_run(),
+        "recent_executions": [r for r in CRON_AUDIT_LOGS if str(r.get("job_name", "")).endswith("_BATCH")][:10],
+    })
+
+
+@router.get("/pipeline/{cycle}")
+@router.post("/pipeline/{cycle}")
+async def pipeline_batch_trigger(cycle: str, request: Request):
+    """Run one bank batch cycle (BOD/SOD/T1/EOD) in the background.
+
+    Each cycle refreshes BigQuery → S3/Glue/Iceberg → Snowflake L0/L1/L2 → DuckDB
+    and writes its outcome to BANK_DB.L2_CURATED.BATCH_CONTROL.
+    """
+    from app.core import bank_batch_cycles
+
+    cycle = str(cycle or "").upper()
+    if cycle not in bank_batch_cycles.CYCLES:
+        return JSONResponse(status_code=404, content={
+            "success": False,
+            "error": f"Unknown cycle '{cycle}'. Expected BOD, SOD, T1 or EOD.",
+        })
+    if not _automation_authorised(request):
+        return JSONResponse(status_code=403, content={
+            "success": False,
+            "error": "Automation credentials required.",
+        })
+    if bank_batch_cycles.is_running():
+        return JSONResponse(status_code=429, content={
+            "success": False,
+            "error": "A batch cycle is already running.",
+        })
+
+    def worker():
+        try:
+            bank_batch_cycles.run(cycle, trigger="api")
+        except Exception as exc:
+            _record_cron_run(f"{cycle}_BATCH", "ERROR", {"error": str(exc)[:300]})
+            log_event(f"[CronGateway] {cycle} batch failed: {exc}", component="CronGateway")
+
+    threading.Thread(target=worker, daemon=True).start()
+    return JSONResponse(status_code=202, content={
+        "success": True,
+        "status": "DISPATCHED_IN_BACKGROUND",
+        "cycle": cycle,
+        "label": bank_batch_cycles.CYCLES[cycle]["label"],
+        "message": f"{cycle} cycle started; the ledger row lands in L2_CURATED.BATCH_CONTROL.",
+    })
+
+
 @router.get("/status")
 async def cron_gateway_status():
     """Returns status and configuration guide for cron-job.org console."""
