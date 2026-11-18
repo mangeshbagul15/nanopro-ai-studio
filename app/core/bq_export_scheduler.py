@@ -13,7 +13,7 @@ from app.core.logger import log_event
 
 _STARTED = threading.Event()
 DEFAULT_INTERVAL_MIN = 60
-STATE: dict = {"armed": False, "interval_min": DEFAULT_INTERVAL_MIN, "last_attempt": None}
+STATE: dict = {"armed": False, "interval_min": DEFAULT_INTERVAL_MIN, "last_attempt": None, "snowflake": {}}
 
 
 def _enabled() -> bool:
@@ -41,6 +41,13 @@ def _loop() -> None:
                     f"[BQExport] {result.get('status')}: {result.get('summary')}",
                     component="BQExportScheduler",
                 )
+                if result.get("tables"):
+                    try:
+                        from app.core.snowflake_lakehouse import sync as sync_snowflake
+
+                        STATE["snowflake"] = sync_snowflake(result["tables"], str(result.get("run_id") or ""))
+                    except Exception as exc:
+                        STATE["snowflake"] = {"status": "error", "error": str(exc)[:240]}
                 try:
                     from app.core.cron_gateway_router import _record_cron_run
 
