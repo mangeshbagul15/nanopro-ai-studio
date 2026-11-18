@@ -12,6 +12,7 @@ the last pipeline manifest; nothing is estimated or invented.
 """
 from __future__ import annotations
 
+import json
 import threading
 import time
 from datetime import datetime, timezone
@@ -45,17 +46,6 @@ def _column(name: str, dtype: str = "") -> Dict[str, Any]:
     return {"name": str(name), "type": str(dtype or ""), "key": ""}
 
 
-def _exported_rows() -> Dict[str, int]:
-    from app.core.bigquery_aws_pipeline import last_run
-
-    rows: Dict[str, int] = {}
-    for item in last_run().get("tables") or []:
-        table = str(item.get("table") or "").upper()
-        if table:
-            rows[table] = int(item.get("rows") or 0)
-    return rows
-
-
 # ----------------------------------------------------------------------------
 # BigQuery — source of record
 # ----------------------------------------------------------------------------
@@ -70,7 +60,6 @@ def _bigquery_layer() -> Dict[str, Any]:
         return _layer("bigquery", "GOOGLE BIGQUERY · source", "bigquery", "☁️",
                       "error", error=f"BigQuery unavailable: {str(exc)[:200]}")
 
-    manifest_rows = _exported_rows()
     schemas = []
     for dataset in datasets:
         try:
@@ -81,7 +70,7 @@ def _bigquery_layer() -> Dict[str, Any]:
         tables = []
         for item in items:
             columns: List[Dict[str, Any]] = []
-            rows: Optional[int] = None
+            rows = 0
             try:
                 meta = client.get_table(item.reference)
                 columns = [_column(field.name, field.field_type) for field in meta.schema]
@@ -91,7 +80,7 @@ def _bigquery_layer() -> Dict[str, Any]:
             tables.append({
                 "name": item.table_id,
                 "type": "table",
-                "rows": rows if rows is not None else manifest_rows.get(item.table_id.upper(), 0),
+                "rows": rows,
                 "columns": columns,
             })
         tables.sort(key=lambda entry: entry["name"])
@@ -122,7 +111,35 @@ def _aws_layer() -> Dict[str, Any]:
         return _layer("aws", f"AWS S3 · {config['bucket']}", "s3", "🪣", "error",
                       error=f"S3 listing failed: {str(exc)[:200]}")
 
-    manifest_rows = _exported_rows()
+    # Each dataset publishes _MANIFEST.json next to its Parquet files; it is the
+    # authoritative per-table row count and column list for that export.
+    manifest_keys: Dict[str, str] = {}
+    for obj in objects:
+        key = str(obj.get("Key") or "")
+        parts = key.split("/")
+        if len(parts) == 4 and parts[-1] == "_MANIFEST.json":
+            manifest_keys[parts[2]] = key
+
+    dataset_rows: Dict[str, Dict[str, int]] = {}
+    dataset_columns: Dict[str, Dict[str, List[Dict[str, Any]]]] = {}
+    for dataset, key in manifest_keys.items():
+        try:
+            body = s3.get_object(Bucket=config["bucket"], Key=key)["Body"].read()
+            manifest = json.loads(body)
+        except Exception:
+            continue
+        rows_map: Dict[str, int] = {}
+        columns_map: Dict[str, List[Dict[str, Any]]] = {}
+        for item in manifest.get("files") or []:
+            name = str(item.get("table") or "").upper()
+            if not name:
+                continue
+            rows_map[name] = int(item.get("rows") or 0)
+            columns_map[name] = [_column(col.get("name"), col.get("type"))
+                                 for col in item.get("columns") or []]
+        dataset_rows[dataset] = rows_map
+        dataset_columns[dataset] = columns_map
+
     by_dataset: Dict[str, Dict[str, Dict[str, Any]]] = {}
     for obj in objects:
         key = str(obj.get("Key") or "")
@@ -138,10 +155,10 @@ def _aws_layer() -> Dict[str, Any]:
             by_dataset[dataset][table] = {
                 "name": table,
                 "type": filename.rsplit(".", 1)[-1] if "." in filename else "object",
-                "rows": manifest_rows.get(table.upper(), 0),
+                "rows": dataset_rows.get(dataset, {}).get(table.upper(), 0),
                 "bytes": size,
                 "key": key,
-                "columns": [],
+                "columns": list(dataset_columns.get(dataset, {}).get(table.upper()) or []),
             }
 
     glue_tables: Dict[str, Dict[str, Any]] = {}
@@ -161,10 +178,11 @@ def _aws_layer() -> Dict[str, Any]:
     schemas = []
     for dataset, tables in sorted(by_dataset.items()):
         for table in tables.values():
-            glue_entry = glue_tables.get(table["name"].upper()) or {}
-            table["columns"] = glue_entry.get("columns") or []
-            if not table["columns"]:
-                table["columns"] = [_column("parquet schema registered in Glue", "parquet")] if glue_entry else []
+            glue_entry = (glue_tables.get(table["name"].upper())
+                          or glue_tables.get(f"{dataset}__{table['name']}".upper()) or {})
+            glue_columns = glue_entry.get("columns") or []
+            if glue_columns:
+                table["columns"] = glue_columns
         schemas.append({"name": dataset, "tables": sorted(tables.values(), key=lambda entry: entry["name"])})
 
     detail = f"s3://{config['bucket']}/{EXPORT_ROOT}/ · {len(objects)} objects"

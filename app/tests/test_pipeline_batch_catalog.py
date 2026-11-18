@@ -203,6 +203,69 @@ class BatchLedgerTest(unittest.TestCase):
         self.assertIn("BUSINESS_DATE = TO_DATE('2026-11-19')", query)
 
 
+class _FakeBody:
+    def __init__(self, payload):
+        self.payload = payload
+
+    def read(self):
+        return self.payload
+
+
+class _FakePaginator:
+    def __init__(self, contents):
+        self.contents = contents
+
+    def paginate(self, **_kwargs):
+        yield {"Contents": self.contents}
+
+
+class _FakeS3:
+    def __init__(self, contents, objects):
+        self.contents = contents
+        self.objects = objects
+
+    def get_paginator(self, _name):
+        return _FakePaginator(self.contents)
+
+    def get_object(self, Bucket, Key):
+        return {"Body": _FakeBody(self.objects[Key])}
+
+
+class _FakeGlue:
+    def get_tables(self, DatabaseName):
+        return {"TableList": []}
+
+
+class AwsLayerTest(unittest.TestCase):
+    def test_manifest_supplies_rows_and_columns(self):
+        import json as _json
+
+        manifest = _json.dumps({"files": [{
+            "table": "CMG", "key": "bronze/bigquery/nanopro_cbs_bronze/cmg/cmg.parquet",
+            "rows": 50, "bytes": 900,
+            "columns": [{"name": "CUST_ID", "type": "VARCHAR"}, {"name": "CUST_NAME", "type": "VARCHAR"}],
+        }]}).encode("utf-8")
+        contents = [
+            {"Key": "bronze/bigquery/nanopro_cbs_bronze/cmg/cmg.parquet", "Size": 900},
+            {"Key": "bronze/bigquery/nanopro_cbs_bronze/_MANIFEST.json", "Size": len(manifest)},
+            {"Key": "bronze/bigquery/nanopro_cbs_bronze/_SUCCESS", "Size": 20},
+        ]
+        s3 = _FakeS3(contents, {"bronze/bigquery/nanopro_cbs_bronze/_MANIFEST.json": manifest})
+        with patch("app.core.chat_s3_export._aws_config",
+                   return_value={"bucket": "b", "access_key": "k", "secret_key": "s", "region": "r"}), \
+                patch("app.core.chat_s3_export._s3_client", return_value=s3), \
+                patch("app.core.bigquery_aws_pipeline._aws_client", return_value=_FakeGlue()):
+            layer = catalog._aws_layer()
+
+        self.assertEqual(layer["kind"], "s3")
+        self.assertEqual(layer["status"], "live")
+        tables = layer["schemas"][0]["tables"]
+        self.assertEqual(len(tables), 1)
+        self.assertEqual(tables[0]["name"], "cmg")
+        self.assertEqual(tables[0]["rows"], 50)
+        self.assertEqual([col["name"] for col in tables[0]["columns"]], ["CUST_ID", "CUST_NAME"])
+
+
 class PipelineCatalogTest(unittest.TestCase):
     def setUp(self):
         catalog._CACHE.update({"at": 0.0, "value": None})
