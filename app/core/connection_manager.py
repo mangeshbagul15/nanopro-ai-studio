@@ -1313,7 +1313,13 @@ class ConnectionManager:
             "Expiration": {"Days": 3650},
         }
         try:
-            existing = s3.get_bucket_lifecycle_configuration(Bucket=bucket_name).get("Rules", [])
+            try:
+                existing = s3.get_bucket_lifecycle_configuration(Bucket=bucket_name).get("Rules", [])
+            except Exception as exc:
+                # A bucket without any lifecycle rule answers NoSuchLifecycleConfiguration.
+                if "NoSuchLifecycleConfiguration" not in str(exc):
+                    raise
+                existing = []
             rules = [item for item in existing if item.get("ID") != rule["ID"]] + [rule]
             s3.put_bucket_lifecycle_configuration(
                 Bucket=bucket_name, LifecycleConfiguration={"Rules": rules}
