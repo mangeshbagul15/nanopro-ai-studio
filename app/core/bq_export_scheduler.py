@@ -83,6 +83,14 @@ def trigger(actor: str = "auto") -> dict:
     """
     if not _enabled():
         return {"status": "disabled", "message": "NANOPRO_BQ_AUTO_EXPORT is off."}
+    try:
+        from app.core.pipeline_orchestrator import is_paused
+
+        if is_paused("bq_to_s3"):
+            return {"status": "paused",
+                    "message": "bq_to_s3 DAG is paused in the Orchestrator; resume it to run the lake automatically."}
+    except Exception:
+        pass
     if is_running():
         return {"status": "running", "message": "An export chain is already in progress; it will pick these rows up."}
     threading.Thread(target=_run_chain, args=(actor,), daemon=True,
