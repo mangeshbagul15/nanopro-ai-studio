@@ -150,15 +150,27 @@ def _summary_frame(cycle: str, business_date: str, status: str, details: Dict[st
     last = state.get("last_result") or {}
     sf = state.get("snowflake") or {}
     duck = state.get("duckdb") or {}
+    sftp_tables = 0
+    sftp_rows = 0
+    try:
+        from app.core import sftp_ingestion
+
+        tables = sftp_ingestion.status().get("tables") or []
+        sftp_tables = len(tables)
+        sftp_rows = sum(int(item.get("rows") or 0) for item in tables)
+    except Exception:
+        pass
     rows = [
         ("Report", f"NanoPro {cycle} batch report"),
         ("Business date", business_date),
         ("Generated at", datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S IST")),
         ("Cycle status", status),
         ("Pipeline run id", last.get("run_id") or details.get("run_id") or ""),
-        ("Tables exported", last.get("tables") or details.get("exported_tables") or 0),
-        ("Rows exported", last.get("rows") or details.get("exported_rows") or 0),
+        ("BigQuery tables exported", last.get("tables") or details.get("exported_tables") or 0),
+        ("BigQuery rows exported", last.get("rows") or details.get("exported_rows") or 0),
         ("Bytes exported", last.get("bytes") or details.get("exported_bytes") or 0),
+        ("SFTP tables in bronze", sftp_tables),
+        ("SFTP rows loaded", sftp_rows),
         ("AWS services", json.dumps(last.get("services") or {}, default=str)),
         ("Snowflake status", sf.get("status") or details.get("snowflake_status") or ""),
         ("L1 duplicates removed", (sf.get("l1") or {}).get("duplicates_removed", "")),
