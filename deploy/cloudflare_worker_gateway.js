@@ -1849,8 +1849,13 @@ function edgeStandbyOrchestratorOverview() {
       "in_flight": false
     }
   ];
+  globalThis._EDGE_PAUSED_DAGS = globalThis._EDGE_PAUSED_DAGS || new Set();
   dags.forEach(d => {
     d.finished_at = new Date().toISOString();
+    if (globalThis._EDGE_PAUSED_DAGS.has(d.id)) {
+      d.paused = true;
+      d.status = "PAUSED";
+    }
   });
   return new Response(JSON.stringify({
     generated_at: new Date().toISOString(),
@@ -6535,10 +6540,19 @@ CRITICAL OPERATIONAL RULES:
         let reqBody = {};
         try { reqBody = await request.json(); } catch (_) {}
         const dagId = reqBody.dag_id || "bq_to_s3";
+        globalThis._EDGE_PAUSED_DAGS = globalThis._EDGE_PAUSED_DAGS || new Set();
+        let nextState = "PAUSED";
+        if (globalThis._EDGE_PAUSED_DAGS.has(dagId)) {
+          globalThis._EDGE_PAUSED_DAGS.delete(dagId);
+          nextState = "RESUMED";
+        } else {
+          globalThis._EDGE_PAUSED_DAGS.add(dagId);
+          nextState = "PAUSED";
+        }
         return new Response(JSON.stringify({
           status: "success",
           dag_id: dagId,
-          state: "PAUSED"
+          state: nextState
         }), { status: 200, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
       }
       if (path.endsWith("/dag/rollback")) {
