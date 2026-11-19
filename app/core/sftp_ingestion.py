@@ -106,9 +106,13 @@ def _slug(value: str) -> str:
 def _table_of(partner: str, filename: str) -> str:
     stem = os.path.splitext(os.path.basename(filename))[0]
     name = _slug(stem).upper() or "UNTITLED"
-    if not name[0].isalpha():
-        name = "T_" + name
-    return f"{(partner or 'manual').upper()}_{name}"[:60]
+    prefix = _slug(partner).upper() or "MANUAL"
+    # Partner files are often already named after the partner (hdfc_upi.csv);
+    # don't repeat the prefix in the bronze table name.
+    full = name if name == prefix or name.startswith(prefix + "_") else f"{prefix}_{name}"
+    if not full[0].isalpha():
+        full = "T_" + full
+    return full[:60]
 
 
 def _sniff_separator(sample: str) -> str:
