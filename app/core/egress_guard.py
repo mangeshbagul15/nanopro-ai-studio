@@ -169,10 +169,19 @@ def _ensure_loaded() -> None:
         threading.Thread(target=_flusher_loop, daemon=True, name="EgressFlusher").start()
 
 
+def is_egress_critical() -> bool:
+    """Checks if total Render egress has crossed the safe threshold (4.0 GB+)."""
+    _ensure_loaded()
+    baseline = int(os.environ.get("RENDER_USAGE_BASELINE_BYTES", "0"))
+    with _lock:
+        used = _state["bytes"] + baseline
+    return used >= SOFT_LIMIT
+
 def current_mode() -> str:
     _ensure_loaded()
+    baseline = int(os.environ.get("RENDER_USAGE_BASELINE_BYTES", "0"))
     with _lock:
-        used = _state["bytes"]
+        used = _state["bytes"] + baseline
     if used >= HARD_LIMIT:
         return "hard"
     if used >= SOFT_LIMIT:

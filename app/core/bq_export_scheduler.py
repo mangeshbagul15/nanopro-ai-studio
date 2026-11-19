@@ -19,6 +19,15 @@ STATE: dict = {"armed": False, "running": False, "interval_min": DEFAULT_INTERVA
 
 
 def _enabled() -> bool:
+    try:
+        from app.core.runtime_profile import cloud_safe_mode
+        if cloud_safe_mode():
+            # In free cloud tier (Render), prevent autonomous hourly Parquet dumps
+            # to protect against exceeding the 5GB monthly bandwidth cap.
+            # Manual trigger via Orchestrator UI or explicit opt-in still works.
+            return (os.environ.get("NANOPRO_BQ_AUTO_EXPORT") or "0").strip().lower() in ("1", "true", "yes", "on")
+    except Exception:
+        pass
     return (os.environ.get("NANOPRO_BQ_AUTO_EXPORT") or "1").strip().lower() not in ("0", "false", "no", "off")
 
 

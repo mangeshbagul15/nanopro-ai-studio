@@ -62,11 +62,15 @@ def _kind(base: str) -> str:
     node = _node_name()
     return base if node == "cloud" else f"{base}_{node}"
 SYNC_INTERVAL = max(2.0, float(os.environ.get("DM_SYNC_INTERVAL", "5")))
-# Full state re-uploads dominated the cloud egress bill: every request that
-# touches users.last_active_at changed the signature and pushed the whole
-# snapshot again. Throttle uploads independently of the cheap local check.
-MIN_UPLOAD_INTERVAL = max(SYNC_INTERVAL, float(os.environ.get("DM_MIN_UPLOAD_INTERVAL", "120")))
-MAX_SNAPSHOT_BYTES = int(os.environ.get("DM_SNAPSHOT_MAX_BYTES", str(120 * 1024 * 1024)))
+# Full state re-uploads dominated the cloud egress bill.
+# In cloud mode (Render), default minimum interval is 1800s (30m) and max size is capped at 10MB
+# to strictly stay within the 5GB monthly limit.
+_is_cloud_env = bool(os.environ.get("RENDER") or os.environ.get("IS_CLOUD"))
+_default_min_interval = "1800" if _is_cloud_env else "120"
+_default_max_bytes = str(10 * 1024 * 1024) if _is_cloud_env else str(120 * 1024 * 1024)
+
+MIN_UPLOAD_INTERVAL = max(SYNC_INTERVAL, float(os.environ.get("DM_MIN_UPLOAD_INTERVAL", _default_min_interval)))
+MAX_SNAPSHOT_BYTES = int(os.environ.get("DM_SNAPSHOT_MAX_BYTES", _default_max_bytes))
 MAX_SNAPSHOT_FILES = 5000
 SKIP_SUFFIXES = (".duckdb", ".duckdb.wal", "-wal", "-shm", "-journal", ".tmp", ".lock")
 SKIP_DIRS = {"__pycache__", ".pytest_cache"}
@@ -432,6 +436,13 @@ def _upload(conn, kind: str, blob: bytes) -> bool:
 def snapshot_now() -> Dict[str, Any]:
     if not enabled():
         return {"status": "disabled"}
+    try:
+        from app.core.egress_guard import is_egress_critical
+        if is_egress_critical():
+            log_event("DM snapshot skipped: Render egress budget is near 5GB cap.", level="WARNING", component="DMPersistence")
+            return {"status": "throttled", "message": "Egress budget preservation on cloud"}
+    except Exception:
+        pass
     with _lock:
         conn = None
         try:

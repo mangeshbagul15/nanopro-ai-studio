@@ -28,8 +28,14 @@ class CloudKeepAliveEngine:
         self._running = False
         self._thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
-        self.target_url = RENDER_PUBLIC_URL.rstrip("/") + "/api/monitoring/health"
         self.is_cloud = bool(os.environ.get("RENDER") or os.environ.get("PORT") or os.environ.get("IS_CLOUD"))
+        # When running inside the cloud container, ping localhost on loopback interface
+        # This keeps the Uvicorn workers warm while consuming ZERO public Render bandwidth!
+        port = os.environ.get("PORT", "8000")
+        if self.is_cloud:
+            self.target_url = f"http://127.0.0.1:{port}/api/monitoring/health"
+        else:
+            self.target_url = RENDER_PUBLIC_URL.rstrip("/") + "/api/monitoring/health" 
         self.stats = {
             "total_pings": 0,
             "successful_pings": 0,

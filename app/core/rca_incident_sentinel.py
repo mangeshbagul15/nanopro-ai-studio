@@ -74,7 +74,8 @@ class RCAIncidentSentinel:
 
     def _probe_server_and_sleep_mode(self) -> Dict[str, Any]:
         """Sub-Agent 1: Checks Server HTTP responsiveness and detects Sleep Mode latency."""
-        target = f"{RENDER_URL}/api/health"
+        port = os.environ.get("PORT", "8000")
+        target = f"http://127.0.0.1:{port}/api/health" if os.environ.get("RENDER") else f"{RENDER_URL}/api/health"
         start = time.time()
         try:
             req = urllib.request.Request(target, headers={"User-Agent": "NanoPro-RCASentinel/1.0"})

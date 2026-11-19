@@ -2633,11 +2633,19 @@ class ConnectionManager:
         and emergency alerting to WhatsApp and Telegram.
         """
         time.sleep(4.0)  # Initial boot grace period
-        all_targets = [
-            "NANO_PRO_SNOWFLAKE", "DUCKDB_GOLD_LAKEHOUSE", "GOOGLE_BIGQUERY_SANDBOX",
-            "POSTGRES_CLOUD_FREE", "POSTGRES_RENDER_CLOUD", "MY_POSTGRES_LOCAL",
-            "GMAIL_SMTP", "TELEGRAM_ALERTS", "STUDIO_MEMORY_DB", "AWS_S3_DATA_LAKE"
-        ]
+        is_cloud_env = bool(os.environ.get("RENDER") or os.environ.get("IS_CLOUD"))
+        # On cloud (Render), exclude local laptop DBs to avoid constant network retry timeouts
+        if is_cloud_env:
+            all_targets = [
+                "NANO_PRO_SNOWFLAKE", "GOOGLE_BIGQUERY_SANDBOX",
+                "POSTGRES_CLOUD_FREE", "POSTGRES_RENDER_CLOUD", "AWS_S3_DATA_LAKE"
+            ]
+        else:
+            all_targets = [
+                "NANO_PRO_SNOWFLAKE", "DUCKDB_GOLD_LAKEHOUSE", "GOOGLE_BIGQUERY_SANDBOX",
+                "POSTGRES_CLOUD_FREE", "POSTGRES_RENDER_CLOUD", "MY_POSTGRES_LOCAL",
+                "GMAIL_SMTP", "TELEGRAM_ALERTS", "STUDIO_MEMORY_DB", "AWS_S3_DATA_LAKE"
+            ]
 
         while getattr(self, "_sentinel_running", False):
             try:
@@ -2720,6 +2728,9 @@ class ConnectionManager:
                         pass
             except Exception as loop_err:
                 pass
-            time.sleep(20.0)
+            # In cloud safe mode on Render, sleep 600s (10 min) instead of 20s
+            # This reduces background external network handshakes by 97%, saving ~1GB/month!
+            sleep_sec = 600.0 if bool(os.environ.get("RENDER") or os.environ.get("IS_CLOUD")) else 20.0
+            time.sleep(sleep_sec)
 
 connection_manager = ConnectionManager()

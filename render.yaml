@@ -73,3 +73,19 @@ services:
         value: sk_jev-ai_TeTWU37d7VrPE3iepqXdFs4f42RRfeFI
       - key: JEV_BASE_URL
         value: https://jevtypesafeai.com/api/v1
+      - key: NANOPRO_CLOUD_SAFE
+        value: "1"
+      - key: NANOPRO_BQ_AUTO_EXPORT
+        value: "0"
+      - key: DM_MIN_UPLOAD_INTERVAL
+        value: "1800"
+      - key: DM_SNAPSHOT_MAX_BYTES
+        value: "10485760"
+      - key: KEEP_ALIVE_INTERVAL
+        value: "900"
+      - key: SENTINEL_LOOP_INTERVAL
+        value: "600"
+      - key: NANOPRO_EGRESS_SOFT_BYTES
+        value: "4100000000"
+      - key: NANOPRO_EGRESS_HARD_BYTES
+        value: "4800000000" 
