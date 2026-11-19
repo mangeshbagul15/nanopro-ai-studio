@@ -3887,7 +3887,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     // 1. Instant Zero-Latency Hydration from local cache (0 ms)
     if (!forceRefresh && (!AILAB_EXPLORER.catalog || AILAB_EXPLORER.catalog.length === 0)) {
       try {
-        const cached = localStorage.getItem("nanopro_explorer_catalog_v2");
+        const cached = localStorage.getItem("nanopro_explorer_catalog_v5");
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
@@ -3916,7 +3916,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
         const dbs = data.databases || [];
         if (dbs.length > 0) {
           AILAB_EXPLORER.catalog = dbs;
-          try { localStorage.setItem("nanopro_explorer_catalog_v2", JSON.stringify(dbs)); } catch (_) {}
+          try { localStorage.setItem("nanopro_explorer_catalog_v5", JSON.stringify(dbs)); } catch (_) {}
           ailabRenderExplorerTree();
           return;
         }

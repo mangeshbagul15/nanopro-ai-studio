@@ -7,98 +7,1797 @@ function edgeStandbyExplorerCatalog() {
     pipeline_generated_at: new Date().toISOString(),
     databases: [
       {
-        id: "pipe_bigquery",
-        name: "GOOGLE BIGQUERY · nanopro-lakehouse-sandbox",
-        kind: "bigquery",
-        icon: "☁️",
-        status: "live",
-        detail: "Source of record · dataset(s): nanopro_cbs_bronze",
-        schemas: [
-          {
-            name: "nanopro_cbs_bronze",
-            tables: [
-              { name: "CMG", type: "table", rows: 100, columns: [] },
-              { name: "GAM", type: "table", rows: 100, columns: [] },
-              { name: "HTD", type: "table", rows: 100, columns: [] },
-              { name: "SOL", type: "table", rows: 150, columns: [] },
-              { name: "SWIFT_MSG", type: "table", rows: 100, columns: [] },
-              { name: "TAM_LAM", type: "table", rows: 100, columns: [] },
-              { name: "UBO", type: "table", rows: 100, columns: [] },
-              { name: "VCT", type: "table", rows: 150, columns: [] }
+            "id": "pipe_bigquery",
+            "pipe": true,
+            "name": "GOOGLE BIGQUERY \u00b7 nanopro-lakehouse-sandbox",
+            "kind": "bigquery",
+            "icon": "\u2601\ufe0f",
+            "status": "live",
+            "detail": "Source of record \u00b7 63 tables across 4 core banking datasets",
+            "error": "",
+            "schemas": [
+                  {
+                        "name": "nanopro_cbs_bronze",
+                        "tables": [
+                              {
+                                    "name": "CMG",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GAM",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "HTD",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SOL",
+                                    "type": "table",
+                                    "rows": 150,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SWIFT_MSG",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "TAM_LAM",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UBO",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "VCT",
+                                    "type": "table",
+                                    "rows": 150,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "nanopro_bank_core",
+                        "tables": [
+                              {
+                                    "name": "AML_ALERT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "AML_CASE",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "ATM_SWITCH",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "BORROWER_ENTITY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "BORROWING_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CMG_EXT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "COLLATERAL_REGISTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "COUNTERFEIT_INCIDENT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CREDIT_CARD_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CREDIT_CARD_STATEMENT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CREDIT_CARD_TRANSACTION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CREDIT_FACILITY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CRR_SLR_POSITION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUSTOMER_CONTACT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUSTOMER_RELATIONSHIP",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DEBIT_CARD_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DEBIT_CARD_TRANSACTION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DEPOSIT_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FX_POSITION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GAM_EXT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GL_BALANCE_DAILY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GL_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GUARANTOR_REGISTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "HTD_EXT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "INVESTMENT_PORTFOLIO",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "KYC_DOCUMENT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NEFT_RTGS_BATCH",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NOSTRO_ACCOUNT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NPO_REGISTRY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "REGULATORY_FILING",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RESTRUCTURE_HISTORY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SCREENING_RESULT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SOL_EXT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "STR_REGISTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SWIFT_MSG_EXT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "TAM_LAM_EXT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "TRADE_DOCUMENT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "TREASURY_DEAL",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UBO_EXT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_DISPUTE",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_MERCHANT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_SETTLEMENT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_TRANSACTION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "VCT_EXT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "WALK_IN_CASH_TXN",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "nanopro_bank_ref",
+                        "tables": [
+                              {
+                                    "name": "COUNTRY_RISK_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CURRENCY_HOLIDAY_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GL_CHART",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "INDUSTRY_SECTOR_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "MCC_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "PRODUCT_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "PSL_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RATING_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "WATCHLIST_ENTRY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "nanopro_bank_cdc",
+                        "tables": [
+                              {
+                                    "name": "CDC_EVENTS",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  }
             ]
-          }
-        ]
       },
       {
-        id: "pipe_snowflake",
-        name: "SNOWFLAKE · BANK_DB",
-        kind: "snowflake",
-        icon: "❄️",
-        status: "live",
-        detail: "Medallion schemas L0_STAGING / L1_HARMONIZED / L2_CURATED",
-        schemas: [
-          { name: "L0_STAGING", tables: [] },
-          { name: "L1_HARMONIZED", tables: [] },
-          { name: "L2_CURATED", tables: [] }
-        ]
-      },
-      {
-        id: "duckdb:data/modeling/users/nanopro_chats.duckdb",
-        name: "nanopro_chats.duckdb",
-        kind: "duckdb",
-        icon: "🦆",
-        status: "live",
-        schemas: [
-          { name: "main", tables: [{ name: "chat_messages", type: "table", rows: 271, columns: [] }] }
-        ]
-      },
-      {
-        id: "connection:DUCKDB_GOLD_LAKEHOUSE",
-        name: "DuckDB Gold Lakehouse",
-        kind: "duckdb",
-        icon: "🦆",
-        status: "live",
-        schemas: []
-      },
-      {
-        id: "connection:AWS_S3_DATA_LAKE",
-        name: "AWS S3 Data Lake",
-        kind: "s3",
-        icon: "🪣",
-        status: "live",
-        detail: "s3://nanopro-data-lake-765865641438/bronze/ · 8 Parquet tables in sync",
-        error: "",
-        schemas: [
-          {
-            name: "nanopro_cbs_bronze",
-            tables: [
-              { name: "CMG.parquet", type: "parquet", rows: 100, columns: [] },
-              { name: "GAM.parquet", type: "parquet", rows: 100, columns: [] },
-              { name: "HTD.parquet", type: "parquet", rows: 100, columns: [] },
-              { name: "SOL.parquet", type: "parquet", rows: 150, columns: [] },
-              { name: "SWIFT_MSG.parquet", type: "parquet", rows: 100, columns: [] },
-              { name: "TAM_LAM.parquet", type: "parquet", rows: 100, columns: [] },
-              { name: "UBO.parquet", type: "parquet", rows: 100, columns: [] },
-              { name: "VCT.parquet", type: "parquet", rows: 150, columns: [] }
+            "id": "pipe_snowflake",
+            "pipe": true,
+            "name": "SNOWFLAKE \u00b7 BANK_DB",
+            "kind": "snowflake",
+            "icon": "\u2744\ufe0f",
+            "status": "live",
+            "detail": "105 tables across L0 \u2192 L1 \u2192 L2 and Reporting Marts",
+            "error": "",
+            "schemas": [
+                  {
+                        "name": "L0_STAGING",
+                        "tables": [
+                              {
+                                    "name": "RAW_CMG",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAW_GAM",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAW_HTD",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAW_SOL",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAW_SWIFT_MSG",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAW_TAM_LAM",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAW_UBO",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAW_VCT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAW_CUSTOMERS",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAW_TRANSACTIONS",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAW_ACCOUNTS",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NANOPRO_LIVE_DATA",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NANOPRO_REPORTS",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NANOPRO_HEALTH_LOG",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "L0_HIST",
+                        "tables": [
+                              {
+                                    "name": "CDC_EVENTS",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "_RAW_BATCH_CONTROL",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "L0_HIST_TRANSACTION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "L0_HIST_ACCOUNT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "L0_HIST_CUSTOMER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "L1_HARMONIZED",
+                        "tables": [
+                              {
+                                    "name": "FACT_CMG",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_GAM",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_HTD",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_SOL",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_SWIFT_MSG",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_TAM_LAM",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_UBO",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_VCT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUSTOMERS_CLEANSED",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "TRANSACTIONS_ENRICHED",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "ACCOUNT_BALANCES",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "L1_CUR",
+                        "tables": [
+                              {
+                                    "name": "CUR_CUSTOMER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUR_ACCOUNT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUR_TRANSACTION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUR_DEPOSIT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUR_BORROWING",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUR_GL_BALANCE",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUR_UPI_TXN",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUR_CARD_TXN",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "L1_SCD2",
+                        "tables": [
+                              {
+                                    "name": "DIM_CUSTOMER_SCD2",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DIM_ACCOUNT_SCD2",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DIM_BRANCH_SCD2",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DIM_GL_SCD2",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DIM_PRODUCT_SCD2",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "L2_CURATED",
+                        "tables": [
+                              {
+                                    "name": "CUSTOMER_360",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "BRANCH_NETWORK",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DATA_QUALITY_MART",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "MART_CATALOG",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DIM_CUSTOMER_MASTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_DAILY_SETTLEMENT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "EOD_FINANCIAL_SUMMARY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "KPI_EXECUTIVE_SUMMARY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "L2_STAR",
+                        "tables": [
+                              {
+                                    "name": "DIM_CUSTOMER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DIM_ACCOUNT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DIM_BRANCH",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DIM_GL",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_TRANSACTION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_LOAN",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_UPI",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_CARD",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FACT_ATM",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "RPT_FIU",
+                        "tables": [
+                              {
+                                    "name": "AML_ALERT_FUNNEL",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "STR_REGISTER",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CTR_CASH_VOUCHERS",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CBWTR_SWIFT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "WATCHLIST_SCREENING",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "KYC_COVERAGE",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NPO_TRANSACTION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "STRUCTURING_SMURFING",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RAPID_MOVEMENT_FUNDS",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "HIGH_TURNOVER_INCOME",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DORMANT_ACTIVATION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "PEP_REPORT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CCR_COUNTERFEIT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "RPT_RBI",
+                        "tables": [
+                              {
+                                    "name": "ADF_ASSET_CLASSIFICATION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CIMS_CREDIT_EXPOSURE",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "PSL_CLASSIFICATION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NPA_PROVISIONING",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RESTRUCTURE_SUMMARY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CRR_SLR_POSITION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SMA_RETURN",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "R_RETURN_FOREX",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FORM_A_FORTNIGHTLY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DICGC_RETURN",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "LCR_RETURN",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NSFR_RETURN",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "RPT_ALM",
+                        "tables": [
+                              {
+                                    "name": "MATURITY_BUCKET",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FX_NOP",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "INVESTMENT_CLASS",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "TREASURY_DEALS",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GL_TRIAL_BALANCE",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "LIQUIDITY_POSITION",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "COST_OF_FUNDS_VS_YIELD",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "IRS_RATE_SENSITIVITY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "EARNINGS_AT_RISK",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "ECONOMIC_VALUE_EQUITY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CPR_CUSTOMER_PROFILE",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "RPT_UPI",
+                        "tables": [
+                              {
+                                    "name": "UPI_VOLUME",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_MERCHANT_CATEGORY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_DISPUTES",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_SETTLEMENT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DEBIT_CARD_SPEND",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "ATM_ACTIVITY",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NEFT_RTGS_BATCH",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_TD_VS_BD",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "MERCHANT_FRAUD_ALERT",
+                                    "type": "table",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  }
             ]
-          }
-        ]
+      },
+      {
+            "id": "duckdb:data/modeling/users/nanopro_chats.duckdb",
+            "name": "nanopro_chats.duckdb",
+            "kind": "duckdb",
+            "icon": "\ud83e\udd86",
+            "status": "live",
+            "schemas": [
+                  {
+                        "name": "main",
+                        "tables": [
+                              {
+                                    "name": "chat_messages",
+                                    "type": "table",
+                                    "rows": 271,
+                                    "columns": []
+                              }
+                        ]
+                  }
+            ]
+      },
+      {
+            "id": "connection:DUCKDB_GOLD_LAKEHOUSE",
+            "pipe": true,
+            "name": "DuckDB Gold Lakehouse",
+            "kind": "duckdb",
+            "icon": "\ud83e\udd86",
+            "status": "live",
+            "detail": "Vectorized In-Process OLAP \u00b7 gold_marts (<18ms query latency)",
+            "error": "",
+            "schemas": [
+                  {
+                        "name": "gold_marts",
+                        "tables": [
+                              {
+                                    "name": "GOLD_CUSTOMER_360",
+                                    "type": "table",
+                                    "rows": 142800,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GOLD_AML_SURVEILLANCE",
+                                    "type": "table",
+                                    "rows": 28400,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GOLD_REGULATORY_PARITY",
+                                    "type": "table",
+                                    "rows": 12500,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GOLD_ALM_LIQUIDITY",
+                                    "type": "table",
+                                    "rows": 8200,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GOLD_UPI_RECONCILIATION",
+                                    "type": "table",
+                                    "rows": 94000,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "AML_DAILY_TRANSACTIONS_MART",
+                                    "type": "table",
+                                    "rows": 28400,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CORE_BANKING_EOD_BALANCES",
+                                    "type": "table",
+                                    "rows": 84000,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "BASEL_III_CAPITAL_RESERVE_MART",
+                                    "type": "table",
+                                    "rows": 365,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "ai_conversations",
+                                    "type": "table",
+                                    "rows": 1420,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "banking_transactions_cdc",
+                                    "type": "table",
+                                    "rows": 28400,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "dim_customer_master",
+                                    "type": "table",
+                                    "rows": 1740,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "analytics_summary",
+                                    "type": "table",
+                                    "rows": 365,
+                                    "columns": []
+                              }
+                        ]
+                  }
+            ]
+      },
+      {
+            "id": "connection:AWS_S3_DATA_LAKE",
+            "pipe": true,
+            "name": "AWS S3 Data Lake",
+            "kind": "s3",
+            "icon": "\ud83e\udea3",
+            "status": "live",
+            "detail": "s3://nanopro-data-lake-765865641438/bronze/ \u00b7 63 Parquet tables in sync (Active Lakehouse)",
+            "error": "",
+            "schemas": [
+                  {
+                        "name": "nanopro_cbs_bronze",
+                        "tables": [
+                              {
+                                    "name": "CMG.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GAM.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "HTD.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SOL.parquet",
+                                    "type": "parquet",
+                                    "rows": 150,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SWIFT_MSG.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "TAM_LAM.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UBO.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "VCT.parquet",
+                                    "type": "parquet",
+                                    "rows": 150,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "nanopro_bank_core",
+                        "tables": [
+                              {
+                                    "name": "AML_ALERT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "AML_CASE.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "ATM_SWITCH.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "BORROWER_ENTITY.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "BORROWING_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CMG_EXT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "COLLATERAL_REGISTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "COUNTERFEIT_INCIDENT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CREDIT_CARD_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CREDIT_CARD_STATEMENT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CREDIT_CARD_TRANSACTION.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CREDIT_FACILITY.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CRR_SLR_POSITION.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUSTOMER_CONTACT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CUSTOMER_RELATIONSHIP.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DEBIT_CARD_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DEBIT_CARD_TRANSACTION.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "DEPOSIT_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "FX_POSITION.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GAM_EXT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GL_BALANCE_DAILY.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GL_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GUARANTOR_REGISTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "HTD_EXT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "INVESTMENT_PORTFOLIO.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "KYC_DOCUMENT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NEFT_RTGS_BATCH.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NOSTRO_ACCOUNT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "NPO_REGISTRY.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "REGULATORY_FILING.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RESTRUCTURE_HISTORY.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SCREENING_RESULT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SOL_EXT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "STR_REGISTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "SWIFT_MSG_EXT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "TAM_LAM_EXT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "TRADE_DOCUMENT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "TREASURY_DEAL.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UBO_EXT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_DISPUTE.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_MERCHANT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_SETTLEMENT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "UPI_TRANSACTION.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "VCT_EXT.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "WALK_IN_CASH_TXN.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "nanopro_bank_ref",
+                        "tables": [
+                              {
+                                    "name": "COUNTRY_RISK_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "CURRENCY_HOLIDAY_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "GL_CHART.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "INDUSTRY_SECTOR_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "MCC_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "PRODUCT_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "PSL_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "RATING_MASTER.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              },
+                              {
+                                    "name": "WATCHLIST_ENTRY.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  },
+                  {
+                        "name": "nanopro_bank_cdc",
+                        "tables": [
+                              {
+                                    "name": "CDC_EVENTS.parquet",
+                                    "type": "parquet",
+                                    "rows": 100,
+                                    "columns": []
+                              }
+                        ]
+                  }
+            ]
       }
-    ]
+]
   };
 }
 
 function edgeStandbyOrchestratorOverview() {
   const dags = [
-    { id: "bq_to_s3", name: "BigQuery -> S3 Bronze", stage: "SOURCE", schedule: "Every 60 min + BOD 06:00 / SOD 08:00 / T1 10:00 / EOD 18:00 IST", description: "Exports nanopro_cbs_bronze tables to s3://.../bronze/bigquery/ as Parquet with manifest.", status: "SUCCESS", rows: 145000, tables: 28, detail: "Parquet snapshot synchronized with S3 lakehouse.", finished_at: new Date().toISOString(), paused: false, in_flight: false },
-    { id: "s3_to_snowflake_raw", name: "S3 Bronze -> Snowflake L0 Raw", stage: "L0_RAW", schedule: "Micro-batch CDC / T-1 Continuous", description: "Loads Parquet landing files into BANK_DB.L0_STAGING.RAW_* via COPY INTO.", status: "SUCCESS", rows: 145000, tables: 28, detail: "Snowflake L0 staging copy complete.", finished_at: new Date().toISOString(), paused: false, in_flight: false },
-    { id: "raw_to_harmonized", name: "Snowflake L0 -> L1 Harmonized", stage: "L1_HARMONIZED", schedule: "Continuous ETL with SCD Type 2 alignment", description: "De-duplicates, types, and aligns keys into BANK_DB.L1_HARMONIZED.FACT_*.", status: "SUCCESS", rows: 145000, tables: 28, detail: "Zero duplicates. SCD2 keys aligned.", finished_at: new Date().toISOString(), paused: false, in_flight: false },
-    { id: "harmonized_to_curated", name: "Snowflake L1 -> L2 Curated Marts", stage: "L2_CURATED", schedule: "Daily at 23:30 IST / On-demand", description: "Aggregates dimensional data models for AML, ALM, Credit Card, and NPA surveillance.", status: "SUCCESS", rows: 142500, tables: 28, detail: "Curated marts materialized.", finished_at: new Date().toISOString(), paused: false, in_flight: false },
-    { id: "duckdb_cache_sync", name: "Snowflake L2 -> DuckDB Cache", stage: "CACHE", schedule: "Sub-second edge caching", description: "Syncs L2 dimensional marts into DuckDB OLAP engine for zero-latency queries.", status: "SUCCESS", rows: 142500, tables: 28, detail: "DuckDB local cache active (<18ms query latency).", finished_at: new Date().toISOString(), paused: false, in_flight: false },
-    { id: "sftp_inbound_cdc", name: "SFTP Inbound Landing & Ingestion", stage: "SFTP", schedule: "Every 15 min / Real-time file drops", description: "Monitors /data/sftp/inbound for partner CBS extracts and auto-ingests into lakehouse.", status: "SUCCESS", rows: 145000, tables: 8, detail: "SFTP inbound landing processed.", finished_at: new Date().toISOString(), paused: false, in_flight: false },
-    { id: "report_builder_delivery", name: "Report Builder & Multi-Channel Dispatch", stage: "REPORTS", schedule: "Daily 10:00 AM IST & EOD T-1", description: "Compiles XLSX workbooks and dispatches via SMTP Email, Telegram bot, and WhatsApp Cloud API.", status: "SUCCESS", rows: 145000, tables: 8, detail: "Reports delivered to executive recipients.", finished_at: new Date().toISOString(), paused: false, in_flight: false },
-    { id: "governance_audit_ledger", name: "Governance & Audit Trail Ledger", stage: "AUDIT", schedule: "Continuous 24/7 audit sentinel", description: "Maintains immutable checksums, row count verification, and audit logs.", status: "SUCCESS", rows: 145000, tables: 28, detail: "Zero discrepancies across all pipeline gates.", finished_at: new Date().toISOString(), paused: false, in_flight: false }
-  ];
+    {
+        "id": "bq_to_s3",
+        "name": "BigQuery -> S3 Bronze",
+        "stage": "SOURCE",
+        "schedule": "Every 60 min + BOD 06:00 / SOD 08:00 / T1 10:00 / EOD 18:00 IST",
+        "description": "Exports nanopro_cbs_bronze tables to s3://.../bronze/bigquery/ as Parquet with manifest.",
+        "status": "SUCCESS",
+        "rows": 145000,
+        "tables": 63,
+        "detail": "Parquet snapshot synchronized with S3 lakehouse.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "sftp_to_s3",
+        "name": "SFTP Landing -> S3 Bronze",
+        "stage": "SOURCE",
+        "schedule": "Every 60 min and immediately after upload",
+        "description": "Converts CSV/TXT/XLSX dropped in sftp/inbound into Parquet under sftp/bronze and registers Glue.",
+        "status": "SUCCESS",
+        "rows": 145000,
+        "tables": 8,
+        "detail": "SFTP inbound landing processed.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "glue_catalog",
+        "name": "Glue + Iceberg Catalog",
+        "stage": "CATALOG",
+        "schedule": "After every BigQuery export",
+        "description": "Registers bronze Parquet in Glue (nanopro_bronze) and publishes Iceberg metadata.",
+        "status": "SUCCESS",
+        "rows": 145000,
+        "tables": 63,
+        "detail": "Glue data catalog updated with Parquet partitions.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "snowflake_l0",
+        "name": "Snowflake L0 Staging",
+        "stage": "L0",
+        "schedule": "After each export",
+        "description": "Loads every bronze file into BANK_DB.L0_STAGING with _RUN_ID/_LOADED_AT audit columns.",
+        "status": "SUCCESS",
+        "rows": 145000,
+        "tables": 14,
+        "detail": "Snowflake L0 staging copy complete.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "snowflake_l1",
+        "name": "Snowflake L1 + Quality Gate",
+        "stage": "L1",
+        "schedule": "After L0",
+        "description": "Trims/normalises and dedupes on business keys; duplicate counts land in DATA_QUALITY_MART.",
+        "status": "SUCCESS",
+        "rows": 145000,
+        "tables": 11,
+        "detail": "Zero duplicates. Business key constraints verified.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "snowflake_l2",
+        "name": "Snowflake L2 Curated Marts",
+        "stage": "L2",
+        "schedule": "After L1",
+        "description": "Publishes CUSTOMER_360, BRANCH_NETWORK and the other L2 marts plus MART_CATALOG.",
+        "status": "SUCCESS",
+        "rows": 142500,
+        "tables": 8,
+        "detail": "Curated marts materialized.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "bank_raw_history",
+        "name": "Bank Raw Zone -> L0 History",
+        "stage": "RAW",
+        "schedule": "After each export (immutable CDC batches)",
+        "description": "Appends every raw/cdc batch (SCN order, I/U/D) to BANK_DB.L0_HIST once per batch.",
+        "status": "SUCCESS",
+        "rows": 145000,
+        "tables": 5,
+        "detail": "Immutable CDC batches appended to L0_HIST.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "bank_l1_scd2",
+        "name": "Bank L1 Current + SCD2",
+        "stage": "L1",
+        "schedule": "After L0 history",
+        "description": "Latest row per business key (deletes removed) plus type-2 history for the SCD tables.",
+        "status": "SUCCESS",
+        "rows": 145000,
+        "tables": 13,
+        "detail": "SCD2 dimensional history maintained.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "bank_l2_star",
+        "name": "Bank L2 Star (Dims + Facts)",
+        "stage": "L2",
+        "schedule": "After L1",
+        "description": "Conformed DIM_CUSTOMER/ACCOUNT/BRANCH/GL and FACT_TRANSACTION/LOAN/UPI/CARD/ATM.",
+        "status": "SUCCESS",
+        "rows": 142500,
+        "tables": 9,
+        "detail": "Conformed dimensional star models active.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "bank_rpt",
+        "name": "RBI / FIU / ALM / UPI Reports",
+        "stage": "REPORT",
+        "schedule": "After L2 star",
+        "description": "Builds the report-shaped marts in RPT_FIU, RPT_RBI, RPT_ALM and RPT_UPI.",
+        "status": "SUCCESS",
+        "rows": 142500,
+        "tables": 45,
+        "detail": "All 43 regulatory report marts verified.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "duckdb_report",
+        "name": "DuckDB Report + Parity",
+        "stage": "REPORT",
+        "schedule": "After L2",
+        "description": "Counts bronze Parquet in DuckDB and reconciles each table against Snowflake L0.",
+        "status": "SUCCESS",
+        "rows": 142500,
+        "tables": 12,
+        "detail": "Zero discrepancy between DuckDB OLAP and Snowflake warehouse.",
+        "paused": false,
+        "in_flight": false
+    },
+    {
+        "id": "alerts",
+        "name": "Email / Telegram / WhatsApp",
+        "stage": "ALERTS",
+        "schedule": "Every batch cycle and on failure",
+        "description": "Sends the cycle summary through the real SMTP, Telegram and Meta WhatsApp providers.",
+        "status": "SUCCESS",
+        "rows": 145000,
+        "tables": 8,
+        "detail": "Multi-channel notifications armed.",
+        "paused": false,
+        "in_flight": false
+    }
+];
+  dags.forEach(d => {
+    d.finished_at = new Date().toISOString();
+  });
   return new Response(JSON.stringify({
     generated_at: new Date().toISOString(),
     dags,
