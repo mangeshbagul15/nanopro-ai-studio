@@ -16,6 +16,7 @@ on:
           - FULL_LOAD
           - INCREMENTAL
           - EOD
+          - BANK_SEED
 
 jobs:
   cloud-pipeline-orchestrator:
@@ -52,6 +53,9 @@ jobs:
           echo "Executing Autonomous Cloud Pipeline: $CYCLE via $BASE_URL"
           if [ "$CYCLE" = "FULL_LOAD" ] || [ "$CYCLE" = "INCREMENTAL" ]; then
             RESPONSE=$(curl -s -X POST "$BASE_URL/api/cron/bigquery_to_aws" \
+              -H "X-Cron-Secret: $CRON_SECRET" --max-time 300)
+          elif [ "$CYCLE" = "BANK_SEED" ]; then
+            RESPONSE=$(curl -s -X POST "$BASE_URL/api/cron/bank_core_seed?rows=100&sftp=1" \
               -H "X-Cron-Secret: $CRON_SECRET" --max-time 300)
           else
             RESPONSE=$(curl -s -X POST "$BASE_URL/api/cron/pipeline/$CYCLE" \

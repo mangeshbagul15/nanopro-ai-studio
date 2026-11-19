@@ -223,6 +223,66 @@ async def cron_eod_trigger(request: Request):
         _record_cron_run("EOD_06PM", "ERROR", {"error": str(e)})
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
+@router.get("/bank_core_seed/status")
+async def cron_bank_core_seed_status():
+    """Read-only proof of the bank source seed and the bank layer builds."""
+    from app.core import bank_core_seed, bank_layers
+    from app.core.bigquery_aws_pipeline import last_run
+
+    try:
+        seed_state = bank_core_seed.status()
+    except Exception as exc:
+        seed_state = {"status": "error", "error": str(exc)[:200]}
+    try:
+        layers = bank_layers.status()
+    except Exception as exc:
+        layers = {"status": "error", "error": str(exc)[:200]}
+    return JSONResponse(content={
+        "status": "ONLINE",
+        "seed": seed_state,
+        "layers": layers,
+        "last_run": last_run(),
+    })
+
+
+@router.get("/bank_core_seed")
+@router.post("/bank_core_seed")
+async def cron_bank_core_seed(request: Request):
+    """Seed the bank source tables (49 tables x rows) into BigQuery and SFTP.
+
+    Writes to GCP, S3 and Snowflake, so it needs the automation secret exactly
+    like the batch cycles do.
+    """
+    if not _automation_authorised(request):
+        return JSONResponse(status_code=403, content={
+            "success": False,
+            "error": "Automation credentials required.",
+        })
+    from app.core import bank_core_seed
+
+    try:
+        rows = int(request.query_params.get("rows") or bank_core_seed.model.ROWS_PER_TABLE)
+    except ValueError:
+        return JSONResponse(status_code=400, content={"success": False, "error": "rows must be an integer."})
+    if rows < 1 or rows > 1000:
+        return JSONResponse(status_code=400, content={"success": False, "error": "rows must be between 1 and 1000."})
+    include_sftp = (request.query_params.get("sftp") or "1").lower() in ("1", "true", "yes")
+
+    result = bank_core_seed.start(rows=rows, include_sftp=include_sftp)
+    _record_cron_run("BANK_CORE_SEED", result.get("status", "").upper(),
+                     {"rows": rows, "include_sftp": include_sftp, "message": result.get("message")})
+    return JSONResponse(
+        status_code=202 if result.get("status") == "started" else 200,
+        content={
+            "success": result.get("status") == "started",
+            "status": result.get("status"),
+            "rows_per_table": rows,
+            "include_sftp": include_sftp,
+            "message": result.get("message") or "Bank core seed started; poll /api/cron/bank_core_seed/status.",
+        },
+    )
+
+
 @router.get("/bigquery_to_aws/status")
 async def cron_bigquery_to_aws_status():
     """Read-only proof of the automation: last export run and scheduler state."""
