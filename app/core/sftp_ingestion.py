@@ -345,8 +345,11 @@ def ingest(key: str, force: bool = False) -> Dict[str, Any]:
                 "glue": glue.get("status"), "error": "",
             })
             _BRONZE_CACHE["at"] = 0.0
+            _record("sftp", "sftp_to_s3", "SUCCESS",
+                    f"{table}: {len(frame)} rows from {filename} → s3://{bucket}/{bronze_key}")
         except Exception as exc:
             entry.update({"status": "error", "error": str(exc)[:240], "rows": 0})
+            _record("sftp", "sftp_to_s3", "ERROR", f"{filename}: {entry['error']}")
 
         state["files"][key] = entry
         if entry["status"] == "success":
@@ -361,6 +364,29 @@ def ingest(key: str, force: bool = False) -> Dict[str, Any]:
                   f"({entry.get('rows')} rows)", component="SFTPIngest",
                   level="INFO" if entry["status"] == "success" else "WARNING")
         return entry
+
+
+def _record(actor: str, dag_id: str, status: str, message: str) -> None:
+    try:
+        from app.core.pipeline_orchestrator import _record_run
+
+        _record_run("run", dag_id, status, str(message or "")[:280], actor)
+    except Exception:
+        pass
+
+
+def _publish_downstream(result: Dict[str, Any]) -> None:
+    """Share the latest Snowflake/DuckDB outcome with the DAG cards."""
+    try:
+        from app.core import bq_export_scheduler
+
+        bq_export_scheduler.STATE["snowflake"] = result.get("snowflake") or {}
+        bq_export_scheduler.STATE["duckdb"] = result.get("duckdb") or {}
+        from app.core import pipeline_orchestrator as orch
+
+        orch._OVERVIEW_CACHE["at"] = 0.0
+    except Exception:
+        pass
 
 
 def refresh_downstream(run_id: str = "") -> Dict[str, Any]:
@@ -389,6 +415,21 @@ def refresh_downstream(run_id: str = "") -> Dict[str, Any]:
         f"{result['tables']} bronze tables · Snowflake {sf.get('status')} · "
         f"DuckDB {duck.get('status')}"
     )
+    _publish_downstream(result)
+
+    sf_state = {"synced": "SUCCESS", "partial": "PARTIAL", "unavailable": "ERROR",
+                "error": "ERROR", "skipped": "IDLE"}.get(str(sf.get("status") or ""), "")
+    if sf_state in ("PARTIAL", "ERROR"):
+        reason = str(sf.get("error") or sf.get("status") or "Snowflake sync failed")
+        for dag in ("snowflake_l0", "snowflake_l1", "snowflake_l2"):
+            _record("sftp", dag, sf_state, reason)
+    duck_status = str(duck.get("status") or "")
+    if duck_status == "error":
+        _record("sftp", "duckdb_report", "ERROR", str(duck.get("error") or "DuckDB report failed"))
+    elif duck.get("mismatches"):
+        _record("sftp", "duckdb_report", "PARTIAL",
+                f"{len(duck['mismatches'])} parity mismatch(es): "
+                + ", ".join(str(item) for item in duck["mismatches"][:5]))
     return result
 
 
