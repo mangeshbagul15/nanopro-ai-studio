@@ -63,6 +63,17 @@ class CycleRunRequest(BaseModel):
     cycle: str = "EOD"
 
 
+class BankCoreSeedRequest(BaseModel):
+    rows: int = 100
+    include_sftp: bool = True
+    confirm: bool = False
+
+
+class BankLayersBuildRequest(BaseModel):
+    stage: str = "all"
+    confirm: bool = False
+
+
 # -------------------------------------------------------------
 # Live DAG overview + controls
 # -------------------------------------------------------------
@@ -251,3 +262,58 @@ def orchestrator_logs(limit: int = Query(80, ge=10, le=300)):
     from app.core import pipeline_orchestrator
 
     return JSONResponse(pipeline_orchestrator.logs(limit=limit))
+
+
+# -------------------------------------------------------------
+# Bank core source model (BigQuery + SFTP)
+# -------------------------------------------------------------
+@router.get("/bank_core/model")
+def bank_core_model():
+    """Every source table/column the 43 bank reports need, with lane and keys."""
+    from app.core import bank_core_model
+
+    return JSONResponse(bank_core_model.summary())
+
+
+@router.get("/bank_core/status")
+def bank_core_status():
+    from app.core import bank_core_seed
+
+    return JSONResponse(bank_core_seed.status())
+
+
+@router.post("/bank_core/seed")
+def bank_core_seed(req: BankCoreSeedRequest):
+    from app.core import bank_core_seed
+
+    if not req.confirm:
+        raise HTTPException(status_code=400,
+                            detail="Seeding rewrites the bank-core tables; send confirm=true.")
+    if req.rows < 1 or req.rows > 1000:
+        raise HTTPException(status_code=400, detail="rows must be between 1 and 1000.")
+    return JSONResponse(bank_core_seed.start(rows=req.rows, include_sftp=req.include_sftp))
+
+
+@router.get("/bank_core/layers")
+def bank_core_layers():
+    """Static catalogue + last build status for the bank warehouse layers."""
+    from app.core import bank_layers
+
+    return JSONResponse({"layers": bank_layers.status(),
+                         "catalogue": bank_layers.catalogue()})
+
+
+@router.post("/bank_core/layers/build")
+def bank_core_layers_build(req: BankLayersBuildRequest):
+    from app.core import bank_layers
+
+    if not req.confirm:
+        raise HTTPException(status_code=400,
+                            detail="Layer builds replace L1/L2/RPT tables; send confirm=true.")
+    stage = str(req.stage or "all").lower()
+    if stage not in ("all", "raw", "l1", "star", "rpt"):
+        raise HTTPException(status_code=400,
+                            detail="stage must be one of all, raw, l1, star, rpt.")
+    threading.Thread(target=bank_layers.build, args=(stage, "api"), daemon=True,
+                     name=f"bank-layers-{stage}").start()
+    return JSONResponse({"status": "started", "stage": stage})

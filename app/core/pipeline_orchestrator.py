@@ -50,6 +50,18 @@ DAGS: List[Dict[str, Any]] = [
     {"id": "snowflake_l2", "name": "Snowflake L2 Curated Marts", "stage": "L2",
      "schedule": "After L1",
      "description": "Publishes CUSTOMER_360, BRANCH_NETWORK and the other L2 marts plus MART_CATALOG."},
+    {"id": "bank_raw_history", "name": "Bank Raw Zone -> L0 History", "stage": "RAW",
+     "schedule": "After each export (immutable CDC batches)",
+     "description": "Appends every raw/cdc batch (SCN order, I/U/D) to BANK_DB.L0_HIST once per batch."},
+    {"id": "bank_l1_scd2", "name": "Bank L1 Current + SCD2", "stage": "L1",
+     "schedule": "After L0 history",
+     "description": "Latest row per business key (deletes removed) plus type-2 history for the SCD tables."},
+    {"id": "bank_l2_star", "name": "Bank L2 Star (Dims + Facts)", "stage": "L2",
+     "schedule": "After L1",
+     "description": "Conformed DIM_CUSTOMER/ACCOUNT/BRANCH/GL and FACT_TRANSACTION/LOAN/UPI/CARD/ATM."},
+    {"id": "bank_rpt", "name": "RBI / FIU / ALM / UPI Reports", "stage": "REPORT",
+     "schedule": "After L2 star",
+     "description": "Builds the report-shaped marts in RPT_FIU, RPT_RBI, RPT_ALM and RPT_UPI."},
     {"id": "duckdb_report", "name": "DuckDB Report + Parity", "stage": "REPORT",
      "schedule": "After L2",
      "description": "Counts bronze Parquet in DuckDB and reconciles each table against Snowflake L0."},
@@ -245,6 +257,29 @@ def _dag_statuses(sftp: Dict[str, Any], notifications: List[Dict[str, Any]]) -> 
                   ", ".join(sorted((l2.get('marts') or {}).keys())[:6]),
     }
 
+    bank = state.get("bank") or {}
+    bank_stages = bank.get("stage_status") or {}
+    bank_map = {"LOADED": "SUCCESS", "BUILT": "SUCCESS", "PARTIAL": "PARTIAL", "ERROR": "ERROR"}
+    bank_detail = (f"L0_HIST {bank.get('l0_hist') or 0} events · L1 {bank.get('l1') or 0} tables · "
+                   f"SCD2 {bank.get('scd2') or 0} tables · star {bank.get('star') or 0} · "
+                   f"reports {bank.get('reports') or 0}")
+    statuses["bank_raw_history"] = {
+        "status": bank_map.get(str(bank_stages.get("l0_hist") or "").upper(), "NOT_RUN"),
+        "rows": bank.get("l0_hist"), "tables": 1, "detail": bank_detail,
+    }
+    statuses["bank_l1_scd2"] = {
+        "status": bank_map.get(str(bank_stages.get("l1_current") or "").upper(), "NOT_RUN"),
+        "tables": bank.get("l1"), "scd2_tables": bank.get("scd2"), "detail": bank_detail,
+    }
+    statuses["bank_l2_star"] = {
+        "status": bank_map.get(str(bank_stages.get("l2_star") or "").upper(), "NOT_RUN"),
+        "tables": bank.get("star"), "detail": bank_detail,
+    }
+    statuses["bank_rpt"] = {
+        "status": bank_map.get(str(bank_stages.get("reports") or "").upper(), "NOT_RUN"),
+        "tables": bank.get("reports"), "detail": bank_detail,
+    }
+
     duck_status = str(duck.get("status") or "not_run")
     statuses["duckdb_report"] = {
         "status": {"reconciled": "SUCCESS", "built": "SUCCESS", "empty": "IDLE",
@@ -362,6 +397,7 @@ def overview(force: bool = False) -> Dict[str, Any]:
         "runs": runs,
         "incidents": incidents[:25],
         "snowflake": bq_export_scheduler.STATE.get("snowflake") or {},
+        "bank": bq_export_scheduler.STATE.get("bank") or {},
         "duckdb": bq_export_scheduler.STATE.get("duckdb") or {},
     }
     _OVERVIEW_CACHE.update({"at": now, "value": result})
@@ -498,6 +534,12 @@ def run(dag_id: str, mode: str = "incremental", actor: str = "ui") -> Dict[str, 
         from app.core import sftp_ingestion
 
         target = sftp_ingestion.refresh_downstream
+    elif dag_id in ("bank_raw_history", "bank_l1_scd2", "bank_l2_star", "bank_rpt"):
+        from app.core import bank_layers
+
+        stage = {"bank_raw_history": "raw", "bank_l1_scd2": "l1",
+                 "bank_l2_star": "star", "bank_rpt": "rpt"}[dag_id]
+        target = lambda s=stage: bank_layers.build(s)
     elif dag_id == "duckdb_report":
         from app.core import sftp_ingestion
         from app.core.duckdb_report_engine import build
@@ -560,6 +602,16 @@ def rollback(dag_id: str, target_layer: str = "", confirm: bool = False, actor: 
                 "message": "Re-exported from BigQuery (the source of truth) and rebuilt every downstream layer.",
                 "result": {"run_id": result.get("run_id"), "status": result.get("status"),
                            "summary": result.get("summary")}}
+
+    if dag_id in ("bank_raw_history", "bank_l1_scd2", "bank_l2_star", "bank_rpt"):
+        from app.core import bank_layers
+
+        _record_run("rollback", dag_id, "RUNNING", "Rebuilding bank layers from the raw zone", actor)
+        result = bank_layers.build("all")
+        _record_run("rollback", dag_id, str(result.get("status") or "").upper(),
+                    f"Bank layers rebuilt: {result.get('status')}", actor)
+        return {"status": "success", "dag_id": dag_id,
+                "message": "Bank layers rebuilt from the immutable raw CDC zone.", "result": result}
 
     if dag_id == "duckdb_report":
         from app.core import sftp_ingestion

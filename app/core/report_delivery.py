@@ -80,6 +80,34 @@ def _frame(cursor, database: str, schema: str, table: str, limit: int = 5000):
     return _clean_frame(pd.DataFrame(rows, columns=columns))
 
 
+def _layer_catalog(cursor, database: str):
+    import pandas as pd
+
+    from app.core import bank_layers
+
+    schemas = (bank_layers.HIST_SCHEMA, bank_layers.CUR_SCHEMA, bank_layers.SCD_SCHEMA,
+               bank_layers.STAR_SCHEMA) + bank_layers.REPORT_SCHEMAS
+    rows = []
+    for schema in schemas:
+        try:
+            cursor.execute(
+                "SELECT TABLE_NAME FROM "
+                f"{database}.INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{schema}'")
+            names = sorted(str(row[0]).upper() for row in cursor.fetchall() or [])
+        except Exception:
+            names = []
+        for name in names:
+            if not _TABLE_RE.match(name):
+                continue
+            try:
+                cursor.execute(f"SELECT COUNT(*) FROM {database}.{schema}.{name}")
+                count = int((cursor.fetchone() or [0])[0] or 0)
+            except Exception:
+                count = None
+            rows.append({"schema": schema, "table": name, "rows": count})
+    return pd.DataFrame(rows or [{"schema": "unavailable", "table": "", "rows": None}])
+
+
 def _snowflake_frames() -> Dict[str, Any]:
     from app.core import snowflake_client
 
@@ -104,7 +132,33 @@ def _snowflake_frames() -> Dict[str, Any]:
                 frames[table.title().replace("_", " ")] = _frame(cursor, database, "L2_CURATED", table, limit=500)
             except Exception:
                 continue
-        return {"source": f"Snowflake {database}.L2_CURATED", "frames": frames}
+
+        from app.core import bank_layers
+
+        frames["Bank Layer Catalog"] = _layer_catalog(cursor, database)
+        for name in ("DIM_CUSTOMER", "DIM_ACCOUNT", "DIM_BRANCH", "DIM_GL",
+                     "FACT_TRANSACTION", "FACT_LOAN", "FACT_UPI", "FACT_CARD",
+                     "FACT_ATM", "FACT_SWIFT"):
+            try:
+                frames[name[:31]] = _frame(cursor, database, bank_layers.STAR_SCHEMA,
+                                           name, limit=1000)
+            except Exception:
+                continue
+        for schema in bank_layers.REPORT_SCHEMAS:
+            try:
+                cursor.execute(
+                    "SELECT TABLE_NAME FROM "
+                    f"{database}.INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = '{schema}'")
+                tables = sorted(str(row[0]).upper() for row in cursor.fetchall() or [])
+            except Exception:
+                tables = []
+            for name in tables[:4]:
+                try:
+                    sheet = f"{schema[4:]}_{name}"[:31]
+                    frames[sheet] = _frame(cursor, database, schema, name, limit=1000)
+                except Exception:
+                    continue
+        return {"source": f"Snowflake {database}.L2_CURATED + STAR + RPT", "frames": frames}
     finally:
         try:
             connection.close()
@@ -174,6 +228,11 @@ def _summary_frame(cycle: str, business_date: str, status: str, details: Dict[st
         ("AWS services", json.dumps(last.get("services") or {}, default=str)),
         ("Snowflake status", sf.get("status") or details.get("snowflake_status") or ""),
         ("L1 duplicates removed", (sf.get("l1") or {}).get("duplicates_removed", "")),
+        ("Bank L0 history events", (state.get("bank") or {}).get("l0_hist") or ""),
+        ("Bank L1 current tables", (state.get("bank") or {}).get("l1") or ""),
+        ("Bank SCD2 tables", (state.get("bank") or {}).get("scd2") or ""),
+        ("Bank star tables", (state.get("bank") or {}).get("star") or ""),
+        ("Bank report marts", (state.get("bank") or {}).get("reports") or ""),
         ("DuckDB status", duck.get("status") or details.get("duckdb_status") or ""),
         ("DuckDB parity mismatches", ", ".join(duck.get("mismatches") or []) or "none"),
         ("SFTP outbound path", sftp_path),

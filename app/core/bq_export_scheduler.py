@@ -79,6 +79,12 @@ def run_once() -> dict:
         except Exception as exc:
             STATE["snowflake"] = {"status": "error", "error": str(exc)[:240]}
         try:
+            from app.core import bank_layers
+
+            STATE["bank"] = bank_layers.build("all", str(result.get("run_id") or ""))
+        except Exception as exc:
+            STATE["bank"] = {"status": "error", "error": str(exc)[:240]}
+        try:
             from app.core.duckdb_report_engine import build as build_duckdb_report
 
             STATE["duckdb"] = build_duckdb_report(files, str(result.get("run_id") or ""))
@@ -156,6 +162,24 @@ def _record_chain(actor: str, result: dict) -> None:
         _record_orchestrator(actor, "duckdb_report", "PARTIAL",
                              f"{len(duck['mismatches'])} parity mismatch(es): "
                              + ", ".join(str(item) for item in duck["mismatches"][:5]))
+
+    bank = STATE.get("bank") or {}
+    stage_status = bank.get("stage_status") or {}
+    dag_of = {
+        "l0_hist": "bank_raw_history", "l1_current": "bank_l1_scd2",
+        "l1_scd2": "bank_l1_scd2", "l2_star": "bank_l2_star", "reports": "bank_rpt",
+    }
+    detail = (f"L0_HIST {bank.get('l0_hist') or 0} events · L1 {bank.get('l1') or 0} tables · "
+              f"SCD2 {bank.get('scd2') or 0} · star {bank.get('star') or 0} · "
+              f"reports {bank.get('reports') or 0}")
+    for stage, dag in dag_of.items():
+        state = str(stage_status.get(stage) or "").upper()
+        if state in ("LOADED", "BUILT"):
+            _record_orchestrator(actor, dag, "SUCCESS", detail)
+        elif state == "PARTIAL":
+            _record_orchestrator(actor, dag, "PARTIAL", detail)
+        elif state:
+            _record_orchestrator(actor, dag, "ERROR", detail)
 
 
 def _run_chain(actor: str = "auto") -> dict:

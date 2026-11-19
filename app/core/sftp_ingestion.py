@@ -103,9 +103,33 @@ def _slug(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9]+", "_", str(value or "")).strip("_")
 
 
+# Feeds that must land under a fixed bronze table no matter which partner
+# folder they arrive in.  Files are named after the table (upi_transaction_
+# 20261119.csv) so the warehouse and the source model share one name.
+CANONICAL_TABLES = (
+    "DEBIT_CARD_TRANSACTION",
+    "UPI_TRANSACTION",
+    "UPI_SETTLEMENT",
+    "UPI_MERCHANT",
+    "UPI_DISPUTE",
+    "NEFT_RTGS_BATCH",
+    "ATM_SWITCH",
+)
+
+
+def _canonical_table(name: str) -> str:
+    for table in CANONICAL_TABLES:
+        if name == table or name.startswith(table + "_"):
+            return table
+    return ""
+
+
 def _table_of(partner: str, filename: str) -> str:
     stem = os.path.splitext(os.path.basename(filename))[0]
     name = _slug(stem).upper() or "UNTITLED"
+    canonical = _canonical_table(name)
+    if canonical:
+        return canonical
     prefix = _slug(partner).upper() or "MANUAL"
     # Partner files are often already named after the partner (hdfc_upi.csv);
     # don't repeat the prefix in the bronze table name.

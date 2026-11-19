@@ -21472,7 +21472,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           <span style="font-size:16px;">⏱️</span>
           <div>
             <div style="font-size:11.5px;font-weight:800;color:#F8FAFC;">Airflow Orchestrator</div>
-            <div style="font-size:10px;color:#34D399;">8 DAGs • EOD T-1 • SFTP Hub</div>
+            <div style="font-size:10px;color:#34D399;">Live DAGs • EOD T-1 • SFTP Hub</div>
           </div>
         </div>
         <button type="button" class="ailab-btn-primary" onclick="ailabOpenAirflowModal()" style="padding:4px 10px;font-size:11px;background:#10B981;border-color:#10B981;color:#FFFFFF;font-weight:800;cursor:pointer;border-radius:6px;box-shadow:0 0 10px rgba(16,185,129,0.4);">
@@ -21724,7 +21724,7 @@ body.in-global_ai_lab .nano-dynamic-island {
 
     <!-- Navigation Pills / Tabs -->
     <div class="ailab-modal-pills" style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;flex-wrap:wrap;">
-      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">⚡ 8 Banking DAGs &amp; Job Manager</button>
+      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">⚡ <span id="orchDagCountTab">Banking DAGs</span> &amp; Job Manager</button>
       <button type="button" class="ailab-pill" id="tabAirflowSftp" onclick="ailabSwitchAirflowTab('sftp')">📂 SFTP Reports &amp; WinSCP</button>
       <button type="button" class="ailab-pill" id="tabAirflowRecipients" onclick="ailabSwitchAirflowTab('recipients')">📧 Recipients &amp; Notification Logs</button>
       <button type="button" class="ailab-pill" id="tabAirflowLogs" onclick="ailabSwitchAirflowTab('logs')">📜 Multi-Cloud Dynamic Live Logs</button>
@@ -21737,7 +21737,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
         <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
           <div style="font-size:11px;color:#94A3B8;">AIRFLOW SCHEDULER</div>
-          <div style="font-size:13px;font-weight:700;color:#34D399;margin-top:2px;">● ACTIVE (8 DAGs)</div>
+          <div style="font-size:13px;font-weight:700;color:#34D399;margin-top:2px;">● ACTIVE (<span id="orchDagCountBanner">live DAGs</span>)</div>
         </div>
         <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
           <div style="font-size:11px;color:#94A3B8;">REPORTING BASIS</div>
@@ -26450,6 +26450,10 @@ body.in-global_ai_lab .nano-dynamic-island {
       const res = await fetch("/api/banking/dag/list");
       const data = await res.json();
       const dags = data.dags || [];
+      const countTab = document.getElementById("orchDagCountTab");
+      const countBanner = document.getElementById("orchDagCountBanner");
+      if (countTab) countTab.textContent = dags.length ? `${dags.length} Banking DAGs` : "Banking DAGs";
+      if (countBanner) countBanner.textContent = dags.length ? `${dags.length} DAGs` : "live DAGs";
       if (!dags.length) {
         list.innerHTML = `<div style="text-align:center;padding:20px;color:#94A3B8;">No active DAGs found. <button onclick="ailabResetDefaultDags()" class="ailab-code-btn" style="color:#38BDF8;margin-left:8px;">Load Defaults</button></div>`;
         return;
@@ -26589,7 +26593,7 @@ New Schedule: ${data.dag ? data.dag.schedule : newPeriod + " (" + newTime + " IS
   };
 
   window.ailabResetDefaultDags = async function() {
-    if (!confirm("Reset all 8 Banking DAGs to standard enterprise schedules?")) return;
+    if (!confirm("Reset all Banking DAGs to standard enterprise schedules?")) return;
     try {
       const res = await fetch("/api/banking/dag/reset_defaults", {
         method: "POST",
@@ -26597,7 +26601,7 @@ New Schedule: ${data.dag ? data.dag.schedule : newPeriod + " (" + newTime + " IS
       });
       const data = await res.json();
       if (data.status === "success") {
-        alert("All 8 Banking DAGs restored to default schedules.");
+        alert("All Banking DAGs restored to default schedules.");
         await ailabLoadAirflowDags();
       }
     } catch (err) {

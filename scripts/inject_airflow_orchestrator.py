@@ -34,7 +34,7 @@ modal_html = '''
 
     <!-- Navigation Pills / Tabs -->
     <div class="ailab-modal-pills" style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;gap:8px;">
-      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">🚀 8 Banking DAGs</button>
+      <button type="button" class="ailab-pill is-active" id="tabAirflowDags" onclick="ailabSwitchAirflowTab('dags')">🚀 Banking DAGs</button>
       <button type="button" class="ailab-pill" id="tabAirflowSftp" onclick="ailabSwitchAirflowTab('sftp')">📁 SFTP Reports &amp; WinSCP</button>
       <button type="button" class="ailab-pill" id="tabAirflowArchitecture" onclick="ailabSwitchAirflowTab('arch')">🛡️ L1 Quality Gate &amp; Email Rule</button>
     </div>
@@ -45,7 +45,7 @@ modal_html = '''
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
         <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
           <div style="font-size:11px;color:#94A3B8;">AIRFLOW SCHEDULER</div>
-          <div style="font-size:13px;font-weight:700;color:#34D399;margin-top:2px;">● ACTIVE (8 DAGs)</div>
+          <div style="font-size:13px;font-weight:700;color:#34D399;margin-top:2px;">● ACTIVE (live DAGs)</div>
         </div>
         <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
           <div style="font-size:11px;color:#94A3B8;">REPORTING BASIS</div>
