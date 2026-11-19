@@ -4011,6 +4011,9 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     });
 
     tree.innerHTML = html;
+
+    const badge = $id("ailabExplorerCount");
+    if (badge) badge.textContent = dbs.length + " Database" + (dbs.length !== 1 ? "s" : "");
   };
 
   window.ailabToggleTreeNode = function(key) {
