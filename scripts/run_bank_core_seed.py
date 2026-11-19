@@ -1,8 +1,10 @@
-"""CI entrypoint: seed the bank source model from a GitHub Actions runner.
+"""Local entrypoint: seed the bank source model on any machine.
 
-The free Render instance only has 512 MB and dies while the BigQuery SDK
-imports, so the seed runs here instead. Credentials come from the environment;
-nothing is printed except status and counts.
+Run it with the repo-root ``.env`` file (the standard way this project keeps
+credentials — see ``.env.example``); exported environment variables also work.
+Nothing is printed except status and counts.
+
+    python scripts/run_bank_core_seed.py --rows 100
 """
 from __future__ import annotations
 
@@ -12,7 +14,11 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from dotenv import load_dotenv
+
+ROOT = Path(__file__).resolve().parents[1]
+load_dotenv(ROOT / ".env")
+sys.path.insert(0, str(ROOT))
 
 REQUIRED = (
     "GCP_SERVICE_ACCOUNT_JSON",
@@ -55,6 +61,7 @@ def main() -> int:
     missing = [name for name in REQUIRED if not (os.environ.get(name) or "").strip()]
     if missing:
         print("MISSING_SECRETS=" + ",".join(missing))
+        print(f"Fill these in {ROOT / '.env'} (copy .env.example) or export them, then re-run.")
         return 2
 
     if args.no_chain:
