@@ -1791,6 +1791,10 @@ class CareerHubAgent:
     def start_autonomous_email_dispatcher(self) -> Dict[str, Any]:
         """Starts the persistent background daemon that dispatches live emails every 30 minutes."""
         import threading
+        from app.core.runtime_profile import cloud_safe_mode
+        if cloud_safe_mode() or os.environ.get("NANOPRO_DISABLE_AUTONOMOUS_EMAIL", "").strip().lower() in ("1", "true", "yes"):
+            log_event("Autonomous 30-Minute Email Dispatcher disabled in cloud safe mode.", component="CareerHubAgent")
+            return {"status": "disabled", "reason": "Cloud safe mode enabled"}
         if self._email_dispatcher_running and self._email_dispatcher_thread and self._email_dispatcher_thread.is_alive():
             log_event("Autonomous 30-Minute Email Dispatcher is already active.", component="CareerHubAgent")
             return {"status": "already_running", "interval_seconds": self._email_dispatcher_interval}

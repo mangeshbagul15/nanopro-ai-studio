@@ -1124,6 +1124,10 @@ class APKScheduler:
     def start(self):
         if self._thread and self._thread.is_alive():
             return
+        from app.core.runtime_profile import cloud_safe_mode
+        if cloud_safe_mode():
+            log_event("APK Scheduler disabled in cloud_safe_mode (prevents large APK downloads & uploads on free Render tier).", component="APKDispatcher")
+            return
         self._stop.clear()
         self._wake_event.clear()
         cfg = get_apk_config()

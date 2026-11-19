@@ -1223,13 +1223,13 @@ class DatabaseManager:
         if cursor.fetchone()[0] == 0:
             now_t = time.time()
             schedules = [
-                ("Multi-Domain Telegram Broadcast (Movies, GitHub, APIs, News)", "all", "telegram_broadcast", "10m", "active", now_t, now_t + 600, 5, "Success"),
-                ("Live News & Critical System Alerts Monitor", "all_news", "news_monitor", "5m", "active", now_t, now_t + 300, 3, "Success"),
-                ("Amazon Price Watch Live Monitor", "B0G6DVB6DG", "amazon_price_watch", "10m", "active", now_t, now_t + 600, 1, "Success"),
-                ("Data Engineering Auto-Ingestion Scan", "data_ingestion", "data_ingestion", "10m", "active", now_t, now_t + 600, 3, "Success"),
-                ("Free AI APIs Monitor", "free AI API developer tier", "free_api", "6h", "active", now_t, now_t + 21600, 8, "Completed"),
-                ("Marathi Speech & Voice Projects", "marathi speech voice recognition github", "github_project", "daily", "active", now_t, now_t + 86400, 4, "Completed"),
-                ("Data Engineering & ETL Tools", "python etl snowflake pipeline", "github_project", "daily", "active", now_t, now_t + 86400, 6, "Completed")
+                ("Multi-Domain Telegram Broadcast (Movies, GitHub, APIs, News)", "all", "telegram_broadcast", "10m", "paused", now_t, now_t + 600, 5, "Success"),
+                ("Live News & Critical System Alerts Monitor", "all_news", "news_monitor", "5m", "paused", now_t, now_t + 300, 3, "Success"),
+                ("Amazon Price Watch Live Monitor", "B0G6DVB6DG", "amazon_price_watch", "10m", "paused", now_t, now_t + 600, 1, "Success"),
+                ("Data Engineering Auto-Ingestion Scan", "data_ingestion", "data_ingestion", "10m", "paused", now_t, now_t + 600, 3, "Success"),
+                ("Free AI APIs Monitor", "free AI API developer tier", "free_api", "6h", "paused", now_t, now_t + 21600, 8, "Completed"),
+                ("Marathi Speech & Voice Projects", "marathi speech voice recognition github", "github_project", "daily", "paused", now_t, now_t + 86400, 4, "Completed"),
+                ("Data Engineering & ETL Tools", "python etl snowflake pipeline", "github_project", "daily", "paused", now_t, now_t + 86400, 6, "Completed")
             ]
             cursor.executemany("""
             INSERT INTO discovery_schedules (

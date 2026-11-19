@@ -402,6 +402,12 @@ class DiscoveryEngine:
         """Starts background worker for scheduled discovery routines."""
         if self._scheduler_running:
             return
+        from app.core.runtime_profile import cloud_safe_mode
+        # In cloud safe mode or when automation is disabled, DO NOT run autonomous background discovery routines
+        # This prevents 4 Telegram bot broadcasts and Amazon price scraping from firing every 5-10 minutes on Render.
+        if cloud_safe_mode() or os.environ.get("NANOPRO_AUTOMATION_ENABLED", "0").strip().lower() not in ("1", "true", "yes", "on"):
+            log_event("DiscoveryEngine background scheduler disabled (cloud_safe_mode or automation kill switch active).", component="DiscoveryEngine")
+            return
         self._scheduler_running = True
 
         def _worker():

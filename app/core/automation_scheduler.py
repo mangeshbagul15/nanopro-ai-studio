@@ -37,8 +37,10 @@ class AutomationScheduler:
         self._reconcile_cloud_profile()
 
     CLOUD_LOCAL_LANE_TASKS = {
-        # All banking data pipelines (BOD, SOD, T-1, EOD, S3 Mirror) are 100% Cloud-Native
-        # and execute 24/7 autonomously on Render Cloud without requiring the user's laptop.
+        "DUCKDB_S3_CLOUD_BACKUP": "Uploads full DuckDB lakehouse file to S3 (heavy bandwidth)",
+        "BIGQUERY_AWS_PIPELINE_DAILY": "Autonomous bulk Parquet export to AWS S3 (heavy bandwidth)",
+        "TELEGRAM_APK_DISPATCHER": "Downloads and uploads heavy APK binaries to Telegram",
+        "SFTP_INBOUND_AUTO_INGEST": "Autonomous 15-minute SFTP poll (runs on local lane or manual trigger)",
     }
 
     def _reconcile_cloud_profile(self):
