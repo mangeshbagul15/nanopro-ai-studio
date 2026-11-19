@@ -55,17 +55,33 @@ def run_once() -> dict:
         f"[BQExport] {result.get('status')}: {result.get('summary')}",
         component="BQExportScheduler",
     )
-    if result.get("tables"):
+    files = list(result.get("tables") or [])
+    try:
+        from app.core import sftp_ingestion
+
+        known = {str(item.get("table") or "").upper() for item in files}
+        for item in sftp_ingestion.bronze_files():
+            table = str(item.get("table") or "").upper()
+            if table and table not in known:
+                files.append({
+                    "key": item.get("key"), "table": table, "dataset": item.get("dataset"),
+                    "rows": item.get("rows"), "bytes": item.get("bytes"),
+                })
+                known.add(table)
+    except Exception as exc:
+        log_event(f"[BQExport] SFTP bronze merge failed: {exc}", level="WARNING",
+                  component="BQExportScheduler")
+    if files:
         try:
             from app.core.snowflake_lakehouse import sync as sync_snowflake
 
-            STATE["snowflake"] = sync_snowflake(result["tables"], str(result.get("run_id") or ""))
+            STATE["snowflake"] = sync_snowflake(files, str(result.get("run_id") or ""))
         except Exception as exc:
             STATE["snowflake"] = {"status": "error", "error": str(exc)[:240]}
         try:
             from app.core.duckdb_report_engine import build as build_duckdb_report
 
-            STATE["duckdb"] = build_duckdb_report(result["tables"], str(result.get("run_id") or ""))
+            STATE["duckdb"] = build_duckdb_report(files, str(result.get("run_id") or ""))
         except Exception as exc:
             STATE["duckdb"] = {"status": "error", "error": str(exc)[:240]}
     return result

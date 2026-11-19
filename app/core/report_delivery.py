@@ -90,7 +90,8 @@ def _snowflake_frames() -> Dict[str, Any]:
         frames: Dict[str, Any] = {}
         catalog = _frame(cursor, database, "L2_CURATED", "MART_CATALOG", limit=200)
         frames["Mart Catalog"] = catalog
-        for name in list(catalog.get("MART_NAME") or [])[:8]:
+        mart_names = catalog["MART_NAME"].tolist() if "MART_NAME" in catalog.columns else []
+        for name in mart_names[:8]:
             name = str(name or "")
             if not name or name.upper() == "DATA_QUALITY_MART":
                 continue
