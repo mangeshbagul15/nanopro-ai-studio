@@ -109,6 +109,7 @@ def _aws_layer() -> Dict[str, Any]:
             objects.extend(page.get("Contents") or [])
     except Exception as exc:
         return _layer("aws", f"AWS S3 · {config['bucket']}", "s3", "🪣", "error",
+                      detail=f"s3://{config['bucket']}/{EXPORT_ROOT}/",
                       error=f"S3 listing failed: {str(exc)[:200]}")
 
     # Each dataset publishes _MANIFEST.json next to its Parquet files; it is the

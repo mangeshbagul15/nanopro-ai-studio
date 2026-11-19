@@ -3938,15 +3938,21 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
       const isOpen = filter ? true : (AILAB_EXPLORER.treeOpen[dbKey] === true);
 
       let schemasHtml = "";
-      const s3ListDenied = db.engine === "s3" && /AccessDenied|ListObjectsV2|s3:ListBucket/i.test(String(db.error || ""));
-      const bucketDetail = db.engine === "s3" && db.detail
-        ? `<br><code>${escapeHtml(db.detail)}</code>`
+      const isS3 = (db.engine === "s3" || db.kind === "s3" || db.id === "pipe_aws");
+      const s3ListDenied = isS3 && /AccessDenied|InvalidAccessKeyId|ListObjectsV2|s3:ListBucket/i.test(String(db.error || ""));
+      const bucketDetail = isS3 && (db.detail || db.bucket || db.name)
+        ? `<div style="margin-top:4px;font-family:monospace;color:#94A3B8;font-size:10px;">${escapeHtml(db.detail || ("s3://" + (db.name.includes("·") ? db.name.split("·")[1].trim() : db.name) + "/bronze/"))}</div>`
         : "";
       const errorHint = s3ListDenied
-        ? '<br>To list this bucket, grant <code>s3:ListBucket</code> to its configured AWS identity.'
+        ? '<div style="margin-top:4px;color:#FDE047;font-size:10.5px;">💡 To list objects in this bucket, grant <code>s3:ListBucket</code> permission to its configured AWS IAM identity.</div>'
         : "";
       const errorHtml = db.error
-        ? `<div style="padding:7px 12px 7px 28px;color:#FCA5A5;font-size:10.5px;line-height:1.45;overflow-wrap:anywhere;">${escapeHtml(db.error)}${bucketDetail}${errorHint}</div>`
+        ? `<div style="padding:10px 14px 10px 24px;color:#FCA5A5;font-size:11px;line-height:1.5;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;margin:4px 8px 6px 16px;">
+            <div style="font-weight:700;color:#F87171;margin-bottom:2px;">⚠️ AWS S3 Lakehouse Listing Restricted</div>
+            <div>${escapeHtml(db.error)}</div>
+            ${bucketDetail}
+            ${errorHint}
+          </div>`
         : "";
       (db.schemas || []).forEach(sc => {
         const scKey = "sc_" + db.id + "_" + sc.name;
@@ -8487,7 +8493,9 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     try {
       const res = await ailabAuthFetch(ORCH_API + "/overview", { headers: { "Accept": "application/json" } });
       if (res.status === 401) {
-        if (dagsBox) dagsBox.innerHTML = `<div style="text-align:center;padding:24px;color:#FBBF24;">Session expired - <a href="/login_gateway.html" style="color:#A78BFA;">log in to NanoPro</a> to manage the pipeline.</div>`;
+        if (dagsBox) dagsBox.innerHTML = `<div style="text-align:center;padding:24px;color:#FBBF24;">Session expired - <a href="/login_gateway.html" style="color:#A78BFA;font-weight:700;">log in to NanoPro</a> to run, pause or modify DAGs.</div>`;
+        const line = document.getElementById("airflowSchedulerLine");
+        if (line) line.innerHTML = `<span style="color:#FBBF24;">⚠️ Authentication required to manage scheduler</span>`;
         return;
       }
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -8505,6 +8513,10 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     } catch (err) {
       if (!silent && dagsBox) {
         dagsBox.innerHTML = `<div style="text-align:center;padding:20px;color:#F87171;">Could not load orchestrator: ${orchEsc(err.message)}</div>`;
+      }
+      const line = document.getElementById("airflowSchedulerLine");
+      if (line && line.textContent === "Loading scheduler state...") {
+        line.innerHTML = `<span style="color:#94A3B8;">Scheduler telemetry offline or warming up &bull; <a href="#" onclick="ailabOrchRefreshAll();return false;" style="color:#38BDF8;">Retry</a></span>`;
       }
     }
   };

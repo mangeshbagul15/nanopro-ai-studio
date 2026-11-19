@@ -10,7 +10,7 @@ const source = fs.readFileSync(
   "utf8"
 );
 const helperStart = source.indexOf("window.ailabAuthFetch = function");
-const helperEnd = source.indexOf("\n\n  // The live catalog", helperStart);
+const helperEnd = source.indexOf("// The live catalog", helperStart);
 assert.ok(helperStart >= 0 && helperEnd > helperStart, "Auth helper must be present");
 const helperSource = source.slice(helperStart, helperEnd);
 
