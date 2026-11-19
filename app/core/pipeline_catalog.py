@@ -20,9 +20,12 @@ from typing import Any, Dict, List, Optional
 
 from app.core.logger import log_event
 
-CACHE_TTL_S = 60.0
+from concurrent.futures import ThreadPoolExecutor
+
+CACHE_TTL_S = 180.0
 _CACHE: Dict[str, Any] = {"at": 0.0, "value": None}
 _LOCK = threading.Lock()
+_REFRESHING = False
 SF_SCHEMAS = ("L0_STAGING", "L1_HARMONIZED", "L2_CURATED")
 
 
@@ -67,21 +70,23 @@ def _bigquery_layer() -> Dict[str, Any]:
         except Exception as exc:
             schemas.append({"name": dataset, "tables": [], "error": str(exc)[:160]})
             continue
+        row_counts: Dict[str, int] = {}
+        try:
+            query = f"SELECT table_id, row_count FROM `{client.project}.{dataset}.__TABLES__`"
+            for row in client.query(query).result(timeout=4.0):
+                row_counts[str(row.table_id)] = int(row.row_count or 0)
+        except Exception:
+            pass
         tables = []
         for item in items:
-            columns: List[Dict[str, Any]] = []
-            rows = 0
-            try:
-                meta = client.get_table(item.reference)
-                columns = [_column(field.name, field.field_type) for field in meta.schema]
-                rows = int(meta.num_rows or 0)
-            except Exception:
-                pass
+            t_id = item.table_id
+            rows = row_counts.get(t_id, 0)
+            t_type = "view" if getattr(item, "table_type", "") == "VIEW" else "table"
             tables.append({
-                "name": item.table_id,
-                "type": "table",
+                "name": t_id,
+                "type": t_type,
                 "rows": rows,
-                "columns": columns,
+                "columns": [],
             })
         tables.sort(key=lambda entry: entry["name"])
         schemas.append({"name": dataset, "tables": tables})
@@ -260,14 +265,59 @@ def _snowflake_layer() -> Dict[str, Any]:
 # ----------------------------------------------------------------------------
 # Public snapshot
 # ----------------------------------------------------------------------------
+def _fetch_layers_parallel() -> List[Dict[str, Any]]:
+    with ThreadPoolExecutor(max_workers=3, thread_name_prefix="pipe-layer") as pool:
+        f_bq = pool.submit(_bigquery_layer)
+        f_aws = pool.submit(_aws_layer)
+        f_sf = pool.submit(_snowflake_layer)
+        return [f_bq.result(), f_aws.result(), f_sf.result()]
+
+
+def _background_refresh() -> None:
+    global _REFRESHING
+    try:
+        layers = _fetch_layers_parallel()
+        value = {
+            "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "cached": False,
+            "layers": layers,
+        }
+        with _LOCK:
+            _CACHE.update({"at": time.time(), "value": value})
+        log_event(
+            "Pipeline catalog background refreshed: " + ", ".join(f"{l['kind']}={l['status']}" for l in value["layers"]),
+            component="PipelineCatalog",
+        )
+    except Exception as exc:
+        log_event(f"Pipeline catalog background refresh error: {exc}", level="WARNING", component="PipelineCatalog")
+    finally:
+        _REFRESHING = False
+
+
 def snapshot(force: bool = False) -> Dict[str, Any]:
+    global _REFRESHING
     now = time.time()
     with _LOCK:
-        if not force and _CACHE["value"] is not None and now - _CACHE["at"] < CACHE_TTL_S:
-            cached = dict(_CACHE["value"])
-            cached["cached"] = True
-            return cached
-        layers = [_bigquery_layer(), _aws_layer(), _snowflake_layer()]
+        cached = _CACHE.get("value")
+        age = now - _CACHE.get("at", 0.0)
+
+        # 1. Fresh cache hit (< 180s)
+        if not force and cached is not None and age < CACHE_TTL_S:
+            c = dict(cached)
+            c["cached"] = True
+            return c
+
+        # 2. Stale cache: return immediately and refresh in background
+        if not force and cached is not None:
+            if not _REFRESHING:
+                _REFRESHING = True
+                threading.Thread(target=_background_refresh, daemon=True, name="pipe-catalog-bg").start()
+            c = dict(cached)
+            c["cached"] = True
+            return c
+
+        # 3. Cold start: fetch in parallel
+        layers = _fetch_layers_parallel()
         value = {
             "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "cached": False,

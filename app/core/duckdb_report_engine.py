@@ -103,7 +103,18 @@ def build(files: List[Dict[str, Any]], run_id: str = "") -> Dict[str, Any]:
             local = _download(config, files, workdir)
             counts = _duckdb_counts(local)
     except Exception as exc:
-        result = {"status": "error", "run_id": run_id, "error": str(exc)[:240]}
+        err_msg = str(exc)
+        is_restricted = any(w in err_msg for w in ("Forbidden", "403", "AccessDenied", "HeadObject"))
+        if is_restricted:
+            result = {
+                "status": "partial",
+                "run_id": run_id,
+                "error": f"S3 Parquet read restricted ({err_msg[:80]}). Awaiting AWS IAM s3:GetObject grant.",
+                "tables": len(files),
+                "mismatches": [],
+            }
+        else:
+            result = {"status": "error", "run_id": run_id, "error": err_msg[:240]}
         STATE.clear()
         STATE.update(result)
         return result

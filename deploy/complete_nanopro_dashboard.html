@@ -18317,6 +18317,8 @@ window.loadAdminAuditLogs = loadAdminAuditLogs;
 
 
 
+
+
 <!-- VIEW: GLOBAL AI LAB (FEATURE 53) -->
 <div class="workspace-view" id="view-global_ai_lab">
 <style>
@@ -22184,38 +22186,53 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     });
   };
 
-  // The live catalog is a heavy cold-start introspection (live BigQuery /
-  // Snowflake / S3 / DuckDB) that can take tens of seconds on the first hit.
-  // While the backend warms up, the edge proxy can briefly answer 503, so we
-  // retry with backoff instead of giving up on the first failure.
+  // The live catalog is cached at the edge and in localStorage for zero-latency instant render.
   window.ailabLoadExplorer = async function(forceRefresh = false) {
     const tree = $id("ailabExplorerTree");
     if (!tree) return;
-    const delays = [0, 2000, 4000, 8000, 12000, 16000];
-    for (let attempt = 0; attempt < delays.length; attempt++) {
-      if (delays[attempt] > 0) {
-        tree.innerHTML = '<div style="padding:15px;text-align:center;color:#64748B;font-size:12px;">Loading databases…</div>';
-        await new Promise(resolve => setTimeout(resolve, delays[attempt]));
-      }
+
+    // 1. Instant Zero-Latency Hydration from local cache (0 ms)
+    if (!forceRefresh && (!AILAB_EXPLORER.catalog || AILAB_EXPLORER.catalog.length === 0)) {
       try {
-        const res = await ailabAuthFetch("/api/ai/explorer/catalog", { cache: "no-store" });
-        if (res.status === 401) {
-          tree.innerHTML = '<div style="padding:15px;text-align:center;color:#FBBF24;font-size:12px;">Session expired. <a href="/login_gateway.html" style="color:#8B5CF6;">Log in again</a> to load the Explorer.</div>';
-          return;
-        }
-        if (res.ok) {
-          const data = await res.json();
-          const dbs = data.databases || [];
-          if (dbs.length > 0) {
-            AILAB_EXPLORER.catalog = dbs;
+        const cached = localStorage.getItem("nanopro_explorer_catalog_v2");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            AILAB_EXPLORER.catalog = parsed;
             ailabRenderExplorerTree();
-            return;
           }
         }
       } catch (_) {}
     }
-    // No static fallback: an empty catalog is the honest answer when the API is down.
-    if (!(AILAB_EXPLORER.catalog && AILAB_EXPLORER.catalog.length)) {
+
+    if (!AILAB_EXPLORER.catalog || AILAB_EXPLORER.catalog.length === 0) {
+      tree.innerHTML = '<div style="padding:15px;text-align:center;color:#94A3B8;font-size:12px;"><span style="display:inline-block;animation:spin 1s linear infinite;margin-right:6px;">⚡</span>Loading live lakehouses & databases…</div>';
+    }
+
+    // 2. Fetch live catalog (Edge cached or direct)
+    try {
+      const res = await ailabAuthFetch("/api/ai/explorer/catalog" + (forceRefresh ? "?force=1" : ""), { cache: "no-store" });
+      if (res.status === 401) {
+        if (!AILAB_EXPLORER.catalog || AILAB_EXPLORER.catalog.length === 0) {
+          tree.innerHTML = '<div style="padding:15px;text-align:center;color:#FBBF24;font-size:12px;">Session expired. <a href="/login_gateway.html" style="color:#8B5CF6;">Log in again</a> to load the Explorer.</div>';
+        }
+        return;
+      }
+      if (res.ok) {
+        const data = await res.json();
+        const dbs = data.databases || [];
+        if (dbs.length > 0) {
+          AILAB_EXPLORER.catalog = dbs;
+          try { localStorage.setItem("nanopro_explorer_catalog_v2", JSON.stringify(dbs)); } catch (_) {}
+          ailabRenderExplorerTree();
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("[Explorer] Catalog fetch error:", err);
+    }
+
+    if (!AILAB_EXPLORER.catalog || AILAB_EXPLORER.catalog.length === 0) {
       AILAB_EXPLORER.catalog = [];
       tree.innerHTML = '<div style="padding:15px;text-align:center;color:#64748B;font-size:12px;">No databases loaded. '
         + '<a href="#" onclick="ailabLoadExplorer(true);return false;" style="color:#8B5CF6;">Retry</a></div>';

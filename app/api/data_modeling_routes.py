@@ -783,7 +783,7 @@ def api_explorer_catalog(request: Request):
     from app.core import data_modeling_ai as dm
 
     try:
-        catalog = dm.catalog_snapshot(ttl=8.0)
+        catalog, _ = dm.catalog_cached()
     except Exception as exc:
         return JSONResponse({"status": "error", "message": str(exc)[:300]}, status_code=500)
     databases = _explorer_databases(catalog)
