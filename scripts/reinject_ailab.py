@@ -15,7 +15,7 @@ end_marker = '<!-- VIEW: 3. AI AGENT CONTROL CENTER -->'
 e_idx = text.find(end_marker, s_idx)
 
 if s_idx != -1 and e_idx != -1:
-    replacement = f"<!-- VIEW: GLOBAL AI LAB (FEATURE 53) -->\n{fresh_html}\n\n        "
+    replacement = f"{fresh_html}\n\n        "
     new_text = text[:s_idx] + replacement + text[e_idx:]
     with open('deploy/complete_nanopro_dashboard.html', 'w', encoding='utf-8') as f:
         f.write(new_text)

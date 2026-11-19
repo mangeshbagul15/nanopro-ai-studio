@@ -3383,7 +3383,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           <span style="font-size:16px;">⏱️</span>
           <div>
             <div style="font-size:11.5px;font-weight:800;color:#F8FAFC;">Airflow Orchestrator</div>
-            <div style="font-size:10px;color:#34D399;">Live DAGs • EOD T-1 • SFTP Hub</div>
+            <div style="font-size:10px;color:#34D399;">DAGs • SFTP • Alerts • Logs</div>
           </div>
         </div>
         <button type="button" class="ailab-btn-primary" onclick="ailabOpenAirflowModal()" style="padding:4px 10px;font-size:11px;background:#10B981;border-color:#10B981;color:#FFFFFF;font-weight:800;cursor:pointer;border-radius:6px;box-shadow:0 0 10px rgba(16,185,129,0.4);">
@@ -3863,6 +3863,22 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     if (btn) btn.classList.toggle("is-active", !isHidden);
   };
 
+  window.ailabAuthFetch = function(url, options = {}) {
+    const headers = new Headers(options.headers || {});
+    let token = "";
+    try {
+      token = localStorage.getItem("nanopro_session_token") || "";
+    } catch (_) {}
+    if (token && new URL(url, window.location.href).origin === window.location.origin) {
+      headers.set("X-Session-Token", token);
+    }
+    return fetch(url, {
+      ...options,
+      headers,
+      credentials: options.credentials || "same-origin"
+    });
+  };
+
   // The live catalog is a heavy cold-start introspection (live BigQuery /
   // Snowflake / S3 / DuckDB) that can take tens of seconds on the first hit.
   // While the backend warms up, the edge proxy can briefly answer 503, so we
@@ -3877,7 +3893,11 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
         await new Promise(resolve => setTimeout(resolve, delays[attempt]));
       }
       try {
-        const res = await fetch("/api/ai/explorer/catalog", { cache: "no-store" });
+        const res = await ailabAuthFetch("/api/ai/explorer/catalog", { cache: "no-store" });
+        if (res.status === 401) {
+          tree.innerHTML = '<div style="padding:15px;text-align:center;color:#FBBF24;font-size:12px;">Session expired. <a href="/login_gateway.html" style="color:#8B5CF6;">Log in again</a> to load the Explorer.</div>';
+          return;
+        }
         if (res.ok) {
           const data = await res.json();
           const dbs = data.databases || [];
@@ -3918,6 +3938,16 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
       const isOpen = filter ? true : (AILAB_EXPLORER.treeOpen[dbKey] === true);
 
       let schemasHtml = "";
+      const s3ListDenied = db.engine === "s3" && /AccessDenied|ListObjectsV2|s3:ListBucket/i.test(String(db.error || ""));
+      const bucketDetail = db.engine === "s3" && db.detail
+        ? `<br><code>${escapeHtml(db.detail)}</code>`
+        : "";
+      const errorHint = s3ListDenied
+        ? '<br>To list this bucket, grant <code>s3:ListBucket</code> to its configured AWS identity.'
+        : "";
+      const errorHtml = db.error
+        ? `<div style="padding:7px 12px 7px 28px;color:#FCA5A5;font-size:10.5px;line-height:1.45;overflow-wrap:anywhere;">${escapeHtml(db.error)}${bucketDetail}${errorHint}</div>`
+        : "";
       (db.schemas || []).forEach(sc => {
         const scKey = "sc_" + db.id + "_" + sc.name;
         const isScOpen = filter ? true : (AILAB_EXPLORER.treeOpen[scKey] === true);
@@ -4004,7 +4034,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
             ${db.error ? '<span title="' + escapeHtml(db.error) + '" style="color:#F87171;font-size:10px;">⚠</span>' : ""}
           </div>
           <div class="ailab-tree-children ${isOpen ? 'is-expanded' : ''}" id="child_${escapeHtml(dbKey)}">
-            ${schemasHtml}
+            ${schemasHtml || errorHtml}
           </div>
         </div>
       `;
@@ -4033,7 +4063,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     ailabRenderExplorerTree();
     try {
       const qs = new URLSearchParams({ database: dbId, schema: schema, table: table });
-      const res = await fetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: "no-store" });
+      const res = await ailabAuthFetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: "no-store" });
       const data = res.ok ? await res.json() : {};
       if (data && Array.isArray(data.columns)) tableEntry.columns = data.columns;
       tableEntry._columnError = (data && data.error) || (res.ok ? "" : `Column lookup failed (${res.status}).`);
@@ -4152,7 +4182,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
   }
 
   async function ailabExplorerPost(path, payload) {
-    const res = await fetch(path, {
+    const res = await ailabAuthFetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -4316,7 +4346,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     if (!columns.length) {
       try {
         const qs = new URLSearchParams({ database: dbId, schema: schema, table: table });
-        const res = await fetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: 'no-store' });
+        const res = await ailabAuthFetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: 'no-store' });
         const data = res.ok ? await res.json() : {};
         columns = data.columns || [];
         if (tb) tb.columns = columns;
@@ -4614,7 +4644,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     };
     if (kind === 'schema') {
       const qs = new URLSearchParams({ database: dbId, schema: schema });
-      fetch(`/api/ai/explorer/schema?${qs.toString()}`, { cache: 'no-store' })
+      ailabAuthFetch(`/api/ai/explorer/schema?${qs.toString()}`, { cache: 'no-store' })
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (data && data.status === 'success') updateMeta(`${data.tables} tables · ${Number(data.rows || 0).toLocaleString()} rows`);
@@ -4622,7 +4652,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
         .catch(() => {});
     } else if (kind === 'table') {
       const qs = new URLSearchParams({ database: dbId, schema: schema, table: table });
-      fetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: 'no-store' })
+      ailabAuthFetch(`/api/ai/explorer/table?${qs.toString()}`, { cache: 'no-store' })
         .then(res => res.ok ? res.json() : null)
         .then(data => {
           if (!data || data.status !== 'success') return;
@@ -8455,9 +8485,9 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
   window.ailabOrchRefreshAll = async function(silent) {
     const dagsBox = document.getElementById("airflowDagsList");
     try {
-      const res = await fetch(ORCH_API + "/overview", { headers: { "Accept": "application/json" } });
+      const res = await ailabAuthFetch(ORCH_API + "/overview", { headers: { "Accept": "application/json" } });
       if (res.status === 401) {
-        if (dagsBox) dagsBox.innerHTML = `<div style="text-align:center;padding:24px;color:#FBBF24;">Session expired - log in to NanoPro to manage the pipeline.</div>`;
+        if (dagsBox) dagsBox.innerHTML = `<div style="text-align:center;padding:24px;color:#FBBF24;">Session expired - <a href="/login_gateway.html" style="color:#A78BFA;">log in to NanoPro</a> to manage the pipeline.</div>`;
         return;
       }
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -8605,7 +8635,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
   window.ailabOrchRun = async function(dagId) {
     ailabOrchToast(`Dispatching ${dagId}...`, "#38BDF8");
     try {
-      const res = await fetch(ORCH_API + "/dag/run", {
+      const res = await ailabAuthFetch(ORCH_API + "/dag/run", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dag_id: dagId, mode: "incremental" })
       });
@@ -8620,7 +8650,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
 
   window.ailabOrchPause = async function(dagId) {
     try {
-      const res = await fetch(ORCH_API + "/dag/pause", {
+      const res = await ailabAuthFetch(ORCH_API + "/dag/pause", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dag_id: dagId })
       });
@@ -8637,7 +8667,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     if (!(await orchDialog(message))) return;
     ailabOrchToast(`Rolling back ${dagId}...`, "#FBBF24");
     try {
-      const res = await fetch(ORCH_API + "/dag/rollback", {
+      const res = await ailabAuthFetch(ORCH_API + "/dag/rollback", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dag_id: dagId, target_layer: "", confirm: true })
       });
@@ -8654,7 +8684,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     const at = String(value).trim();
     if (!/^(?:[01]?\d|2[0-3]):[0-5]\d$/.test(at)) { ailabOrchToast("Use HH:MM format, e.g. 06:00", "#F87171"); return; }
     try {
-      const res = await fetch(ORCH_API + "/schedule", {
+      const res = await ailabAuthFetch(ORCH_API + "/schedule", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cycle, at: at })
       });
@@ -8734,7 +8764,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     const box = document.getElementById("ailabReportMsg");
     if (box) { box.textContent = deliver ? "Building report and sending alerts..." : "Building report..."; box.style.color = "#94A3B8"; }
     try {
-      const res = await fetch(ORCH_API + "/report/build", {
+      const res = await ailabAuthFetch(ORCH_API + "/report/build", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cycle: "MANUAL", deliver: !!deliver })
       });
@@ -8769,7 +8799,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
         ailabSftpMsg(`Uploading ${file.name}...`);
         const form = new FormData();
         form.append("file", file);
-        const res = await fetch(`${ORCH_API}/sftp/upload?partner=${encodeURIComponent(partner)}`, { method: "POST", body: form });
+        const res = await ailabAuthFetch(`${ORCH_API}/sftp/upload?partner=${encodeURIComponent(partner)}`, { method: "POST", body: form });
         const data = await res.json();
         if (!res.ok) { ailabSftpMsg(`${file.name}: ${data.detail || "upload failed"}`, "#F87171"); continue; }
         const ingest = data.ingest || {};
@@ -8786,7 +8816,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
   window.ailabSftpProcess = async function() {
     ailabSftpMsg("Processing landing files...");
     try {
-      const res = await fetch(ORCH_API + "/sftp/process", {
+      const res = await ailabAuthFetch(ORCH_API + "/sftp/process", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ force: false })
       });
       const data = await res.json();
@@ -8802,7 +8832,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     const partner = (document.getElementById("ailabSftpPartner").value || "sample").trim() || "sample";
     ailabSftpMsg("Generating sample file...");
     try {
-      const res = await fetch(`${ORCH_API}/sftp/sample?partner=${encodeURIComponent(partner)}`, { method: "POST" });
+      const res = await ailabAuthFetch(`${ORCH_API}/sftp/sample?partner=${encodeURIComponent(partner)}`, { method: "POST" });
       const data = await res.json();
       if (!res.ok) { ailabSftpMsg(data.detail || "sample failed", "#F87171"); return; }
       ailabSftpMsg(`Sample landed: ${data.key} -> ${(data.ingest || {}).table || "?"}`, "#34D399");
@@ -8814,7 +8844,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     if (!(await orchDialog(`Purge ${key}?\n\nThis drops its bronze Parquet and Snowflake L0/L1 tables. The landing file is kept.`))) return;
     ailabSftpMsg(`Rolling back ${key}...`, "#FBBF24");
     try {
-      const res = await fetch(ORCH_API + "/sftp/rollback", {
+      const res = await ailabAuthFetch(ORCH_API + "/sftp/rollback", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key, confirm: true, delete_landing: false })
       });
@@ -8859,7 +8889,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     if (whatsapp) body.whatsapp_number = whatsapp;
     const msg = document.getElementById("ailabAlertMsg");
     try {
-      const res = await fetch(ORCH_API + "/alerts/config", {
+      const res = await ailabAuthFetch(ORCH_API + "/alerts/config", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
       });
       const data = await res.json();
@@ -8874,7 +8904,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     const msg = document.getElementById("ailabAlertMsg");
     if (msg) { msg.textContent = `Sending test ${channel}...`; msg.style.color = "#94A3B8"; }
     try {
-      const res = await fetch(ORCH_API + "/alerts/test", {
+      const res = await ailabAuthFetch(ORCH_API + "/alerts/test", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ channel })
       });
       const data = await res.json();
@@ -8940,7 +8970,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     if (!box) return;
     box.innerHTML = `<div style="color:#64748B;">Loading logs...</div>`;
     try {
-      const res = await fetch(ORCH_API + "/logs?limit=120");
+      const res = await ailabAuthFetch(ORCH_API + "/logs?limit=120");
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "HTTP " + res.status);
       window.ailabOrchState.logs = data.logs || [];
