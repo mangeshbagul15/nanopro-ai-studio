@@ -162,7 +162,7 @@ def _manifest_keys(s3, bucket: str) -> List[str]:
 
 def _ensure_history(cursor, database: str) -> None:
     cursor.execute(f"CREATE TABLE IF NOT EXISTS {database}.{HIST_SCHEMA}.{CONTROL_TABLE} ("
-                   "BATCH_ID VARCHAR, TABLE_NAME VARCHAR, ROWS NUMBER(38,0), "
+                   "BATCH_ID VARCHAR, TABLE_NAME VARCHAR, ROW_COUNT NUMBER(38,0), "
                    "LOADED_AT TIMESTAMP_NTZ)")
 
 
@@ -417,7 +417,7 @@ def _star_specs(database: str) -> List[Dict[str, Any]]:
         {
             "name": "FACT_LOAN", "requires": [("h", "TAM_LAM"), ("c", "TAM_LAM_EXT")],
             "sql": (
-                "SELECT t.CONTRACT_ID, t.CUST_ID, t.SOL_ID, t.FORACID, t.CONTRACT_TYPE, "
+                "SELECT t.CONTRACT_ID, t.CUST_ID, t.FORACID, t.CONTRACT_TYPE, "
                 "t.NPA_STATUS, t.SMA_CLASSIFICATION, t.PRINCIPAL_AMT, "
                 "t.CURRENT_OUTSTANDING_BAL, t.OVERDUE_PRINCIPAL, t.OVERDUE_INTEREST, "
                 "t.INTEREST_RATE, t.DPD_COUNT, t.RESTRUCTURED_FLAG, "
@@ -804,7 +804,7 @@ def _report_specs(database: str) -> List[Dict[str, Any]]:
          "sql": (
              "SELECT n.RISK_BAND, n.DONOR_COUNTRY, n.PURPOSE, COUNT(DISTINCT n.NPO_ID) AS NPOS, "
              "COUNT(*) AS TXNS, SUM(t.TRAN_AMT_INR) AS TOTAL_AMOUNT_INR, "
-             "SUM(IFF(t.SUSPICIOUS_RULE_HIT, 1, 0)) AS SUSPICIOUS_HITS, "
+             "SUM(IFF(t.SUSPICIOUS_RULE_HIT IS NOT NULL, 1, 0)) AS SUSPICIOUS_HITS, "
              "CURRENT_TIMESTAMP() AS BUILT_AT "
              f"FROM {c}.NPO_REGISTRY n "
              f"JOIN {h}.GAM g ON g.ACID = n.ACCOUNT_ID "

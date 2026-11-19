@@ -38,15 +38,15 @@ def _verify() -> dict:
     counts: dict = {}
     for schema in (model.BASE_SCHEMA, model.CORE_SCHEMA, model.REF_SCHEMA, model.CDC_SCHEMA):
         query = (
-            "SELECT table_name, row_count FROM `{0}.{1}.__TABLES__` "
-            "ORDER BY table_name".format(project, schema)
+            "SELECT table_id, row_count FROM `{0}.{1}.__TABLES__` "
+            "ORDER BY table_id".format(project, schema)
         )
         try:
             rows = list(client.query(query).result())
         except Exception as exc:  # noqa: BLE001
             counts[schema] = {"error": str(exc)[:200]}
             continue
-        counts[schema] = {row["table_name"]: int(row["row_count"]) for row in rows}
+        counts[schema] = {row["table_id"]: int(row["row_count"]) for row in rows}
     return counts
 
 

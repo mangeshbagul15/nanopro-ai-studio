@@ -1,0 +1,485 @@
+{
+  "run_id": "20261119T105351Z",
+  "generated_at": "2026-11-19T10:58:56Z",
+  "tables": 68,
+  "rows": 11797,
+  "snowflake_checked": true,
+  "rows_detail": [
+    {
+      "table": "AML_ALERT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "AML_CASE",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "ATM_SWITCH",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "AXIS_PARTNER_LOANS_20261119",
+      "duckdb_rows": 10,
+      "snowflake_l0_rows": 10,
+      "snowflake_l1_rows": 10,
+      "parity": "match"
+    },
+    {
+      "table": "BOB_NEFT_BATCH_20261119",
+      "duckdb_rows": 6,
+      "snowflake_l0_rows": 6,
+      "snowflake_l1_rows": 6,
+      "parity": "match"
+    },
+    {
+      "table": "BORROWER_ENTITY",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "BORROWING_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "CDC_EVENTS",
+      "duckdb_rows": 5457,
+      "snowflake_l0_rows": 5457,
+      "snowflake_l1_rows": 5457,
+      "parity": "match"
+    },
+    {
+      "table": "CMG",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "CMG_EXT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "COLLATERAL_REGISTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "COUNTERFEIT_INCIDENT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "COUNTRY_RISK_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "CREDIT_CARD_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "CREDIT_CARD_STATEMENT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "CREDIT_CARD_TRANSACTION",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "CREDIT_FACILITY",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "CRR_SLR_POSITION",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "CURRENCY_HOLIDAY_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "CUSTOMER_CONTACT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "CUSTOMER_RELATIONSHIP",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "DEBIT_CARD_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "DEBIT_CARD_TRANSACTION",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "DEPOSIT_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "FX_POSITION",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "GAM",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "GAM_EXT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "GL_BALANCE_DAILY",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "GL_CHART",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "GL_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "GUARANTOR_REGISTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "HDFC_PARTNER_PAYMENTS_20261119",
+      "duckdb_rows": 12,
+      "snowflake_l0_rows": 12,
+      "snowflake_l1_rows": 12,
+      "parity": "match"
+    },
+    {
+      "table": "HTD",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "HTD_EXT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "ICICI_ICICI_UPI_SETTLEMENT_20261119",
+      "duckdb_rows": 8,
+      "snowflake_l0_rows": 8,
+      "snowflake_l1_rows": 8,
+      "parity": "match"
+    },
+    {
+      "table": "INDUSTRY_SECTOR_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "INVESTMENT_PORTFOLIO",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "KYC_DOCUMENT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "MANUAL_SAMPLE_TRANSACTIONS",
+      "duckdb_rows": 4,
+      "snowflake_l0_rows": 4,
+      "snowflake_l1_rows": 4,
+      "parity": "match"
+    },
+    {
+      "table": "MCC_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "NEFT_RTGS_BATCH",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "NOSTRO_ACCOUNT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "NPO_REGISTRY",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "PRODUCT_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "PSL_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "RATING_MASTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "REGULATORY_FILING",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "RESTRUCTURE_HISTORY",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "SCREENING_RESULT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "SOL",
+      "duckdb_rows": 150,
+      "snowflake_l0_rows": 150,
+      "snowflake_l1_rows": 150,
+      "parity": "match"
+    },
+    {
+      "table": "SOL_EXT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "STR_REGISTER",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "SWIFT_MSG",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "SWIFT_MSG_EXT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "TAM_LAM",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "TAM_LAM_EXT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "TRADE_DOCUMENT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "TREASURY_DEAL",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "UBO",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "UBO_EXT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "UPI_DISPUTE",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "UPI_MERCHANT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "UPI_SETTLEMENT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "UPI_TRANSACTION",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "VCT",
+      "duckdb_rows": 150,
+      "snowflake_l0_rows": 150,
+      "snowflake_l1_rows": 150,
+      "parity": "match"
+    },
+    {
+      "table": "VCT_EXT",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "WALK_IN_CASH_TXN",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    },
+    {
+      "table": "WATCHLIST_ENTRY",
+      "duckdb_rows": 100,
+      "snowflake_l0_rows": 100,
+      "snowflake_l1_rows": 100,
+      "parity": "match"
+    }
+  ]
+}
