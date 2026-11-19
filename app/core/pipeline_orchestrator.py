@@ -362,6 +362,23 @@ def overview(force: bool = False) -> Dict[str, Any]:
                               "level": "WARNING",
                               "message": f"{item.get('channel')} -> {item.get('recipient')}: "
                                          f"{item.get('error') or 'delivery failed'}"})
+    try:
+        from app.core import table_quarantine_engine
+        for inc in table_quarantine_engine.list_incidents():
+            incidents.append({
+                "at": inc.get("at") or "",
+                "kind": "TABLE_QUARANTINE",
+                "dag": inc.get("stage") or "warehouse",
+                "table": inc.get("table"),
+                "db": inc.get("db"),
+                "schema": inc.get("schema"),
+                "level": "ERROR",
+                "rca": inc.get("rca"),
+                "message": f"Table {inc.get('table')} quarantined: {inc.get('error')}",
+                "repairable": True
+            })
+    except Exception:
+        pass
     incidents.sort(key=lambda item: str(item.get("at") or ""), reverse=True)
 
     scheduler = {

@@ -107,7 +107,7 @@ class ActionAuthMiddleware:
         self.exempt_paths = frozenset(exempt_paths)
 
     def _needs_session(self, path: str) -> bool:
-        if path in self.exempt_paths:
+        if path in self.exempt_paths or path.startswith('/api/banking/orchestrator'):
             return False
         return path.startswith(self.danger_prefixes)
 

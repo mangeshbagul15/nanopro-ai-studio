@@ -329,3 +329,27 @@ def bank_core_layers_build(req: BankLayersBuildRequest):
     threading.Thread(target=bank_layers.build, args=(stage, "api"), daemon=True,
                      name=f"bank-layers-{stage}").start()
     return JSONResponse({"status": "started", "stage": stage})
+
+
+class IncidentRepairRequest(BaseModel):
+    table: str
+    action: str = "auto_recast"
+
+
+@router.get("/orchestrator/incidents")
+def orchestrator_incidents():
+    from app.core import table_quarantine_engine
+    return JSONResponse({"status": "success", "incidents": table_quarantine_engine.list_incidents()})
+
+
+@router.post("/orchestrator/incidents/repair")
+def orchestrator_incidents_repair(req: IncidentRepairRequest):
+    from app.core import table_quarantine_engine
+    res = table_quarantine_engine.repair_table(req.table, req.action)
+    return JSONResponse(res)
+
+
+@router.post("/orchestrator/incidents/clear")
+def orchestrator_incidents_clear():
+    from app.core import table_quarantine_engine
+    return JSONResponse(table_quarantine_engine.clear_incidents())

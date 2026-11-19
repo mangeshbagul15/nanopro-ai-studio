@@ -1,0 +1,15 @@
+{
+  "run_id": "orc_20261119T154259Z",
+  "generated_at": "2026-11-19T15:43:14Z",
+  "tables": 1,
+  "rows": 4,
+  "snowflake_checked": false,
+  "rows_detail": [
+    {
+      "table": "CBS_FEED_SAMPLE_TRANSACTIONS",
+      "duckdb_rows": 4,
+      "snowflake_l0_rows": null,
+      "snowflake_l1_rows": null
+    }
+  ]
+}

@@ -66,15 +66,25 @@ def _bucket() -> str:
     return bucket
 
 
+LOCAL_STATE_PATH = os.path.join("data", "sftp", "sftp_ingestion_state.json")
+LOCAL_LANDING_DIR = os.path.join("data", "sftp", "inbound")
+LOCAL_BRONZE_DIR = os.path.join("data", "sftp", "bronze")
+
 def _read_state(force: bool = False) -> Dict[str, Any]:
     now = time.time()
     if not force and _STATE_CACHE["value"] and now - _STATE_CACHE["at"] < 30:
         return dict(_STATE_CACHE["value"])
+    value = {}
     try:
         body = _s3().get_object(Bucket=_bucket(), Key=STATE_KEY)["Body"].read()
         value = json.loads(body)
     except Exception:
-        value = {}
+        if os.path.exists(LOCAL_STATE_PATH):
+            try:
+                with open(LOCAL_STATE_PATH, "r", encoding="utf-8") as f:
+                    value = json.load(f)
+            except Exception:
+                value = {}
     if not isinstance(value, dict):
         value = {}
     value.setdefault("files", {})
@@ -85,7 +95,16 @@ def _read_state(force: bool = False) -> Dict[str, Any]:
 
 def _write_state(value: Dict[str, Any]) -> None:
     body = json.dumps(value, indent=2, default=str).encode("utf-8")
-    _s3().put_object(Bucket=_bucket(), Key=STATE_KEY, Body=body, ContentType="application/json")
+    try:
+        _s3().put_object(Bucket=_bucket(), Key=STATE_KEY, Body=body, ContentType="application/json")
+    except Exception:
+        pass
+    try:
+        os.makedirs(os.path.dirname(LOCAL_STATE_PATH), exist_ok=True)
+        with open(LOCAL_STATE_PATH, "w", encoding="utf-8") as f:
+            f.write(json.dumps(value, indent=2, default=str))
+    except Exception:
+        pass
     _STATE_CACHE.update({"at": time.time(), "value": value})
 
 
@@ -209,17 +228,33 @@ def _arrow_duck(field_type) -> str:
 
 
 def _parquet_bytes(frame) -> bytes:
-    import pyarrow as pa
-    import pyarrow.parquet as pq
-
-    table = pa.Table.from_pandas(frame, preserve_index=False)
-    buffer = io.BytesIO()
-    pq.write_table(table, buffer, compression="snappy")
-    columns = [
-        {"name": field.name, "type": _arrow_duck(field.type)}
-        for field in table.schema
-    ]
-    return buffer.getvalue(), columns
+    try:
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+        table = pa.Table.from_pandas(frame, preserve_index=False)
+        buffer = io.BytesIO()
+        pq.write_table(table, buffer, compression="snappy")
+        columns = [
+            {"name": field.name, "type": _arrow_duck(field.type)}
+            for field in table.schema
+        ]
+        return buffer.getvalue(), columns
+    except ImportError:
+        import duckdb
+        con = duckdb.connect(":memory:")
+        con.register("df_tmp", frame)
+        temp_dir = os.path.join("data", "reports", "tmp")
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_parquet = os.path.join(temp_dir, f"tmp_{int(time.time()*1000)}.parquet")
+        con.execute(f"COPY df_tmp TO '{temp_parquet.replace(chr(92), '/')}' (FORMAT PARQUET)")
+        with open(temp_parquet, "rb") as pf:
+            data = pf.read()
+        try:
+            os.remove(temp_parquet)
+        except Exception:
+            pass
+        columns = [{"name": str(col), "type": "VARCHAR"} for col in frame.columns]
+        return data, columns
 
 
 # ----------------------------------------------------------------------------
@@ -237,7 +272,16 @@ def _read_manifest(partner: str) -> Dict[str, Any]:
             manifest.setdefault("files", [])
             return manifest
     except Exception:
-        pass
+        local_m = os.path.join(LOCAL_BRONZE_DIR, partner, "_MANIFEST.json")
+        if os.path.exists(local_m):
+            try:
+                with open(local_m, "r", encoding="utf-8") as mf:
+                    manifest = json.load(mf)
+                    if isinstance(manifest, dict):
+                        manifest.setdefault("files", [])
+                        return manifest
+            except Exception:
+                pass
     return {"source": f"sftp:{partner}", "files": []}
 
 
@@ -247,8 +291,18 @@ def _write_manifest(partner: str, manifest: Dict[str, Any]) -> str:
     manifest["prefix"] = f"{BRONZE_ROOT}/{partner}"
     body = json.dumps(manifest, indent=2, default=str).encode("utf-8")
     key = _manifest_key(partner)
-    _s3().put_object(Bucket=_bucket(), Key=key, Body=body, ContentType="application/json",
-                     Metadata={"sha256": hashlib.sha256(body).hexdigest()})
+    try:
+        _s3().put_object(Bucket=_bucket(), Key=key, Body=body, ContentType="application/json",
+                         Metadata={"sha256": hashlib.sha256(body).hexdigest()})
+    except Exception as exc:
+        log_event(f"[SFTP] S3 manifest put_object skipped/fallback to local: {exc}", level="WARNING", component="SFTPIngest")
+    try:
+        local_m = os.path.join(LOCAL_BRONZE_DIR, partner, "_MANIFEST.json")
+        os.makedirs(os.path.dirname(local_m), exist_ok=True)
+        with open(local_m, "w", encoding="utf-8") as mf:
+            mf.write(json.dumps(manifest, indent=2, default=str))
+    except Exception:
+        pass
     return key
 
 
@@ -294,25 +348,51 @@ def _register_glue(partner: str, table: str, columns: List[Dict[str, str]], loca
 # Ingest
 # ----------------------------------------------------------------------------
 def list_landing() -> List[Dict[str, Any]]:
-    s3 = _s3()
-    bucket = _bucket()
-    paginator = s3.get_paginator("list_objects_v2")
     files: List[Dict[str, Any]] = []
-    for page in paginator.paginate(Bucket=bucket, Prefix=f"{LANDING_ROOT}/"):
-        for obj in page.get("Contents") or []:
-            key = str(obj.get("Key") or "")
-            name = key.rsplit("/", 1)[-1]
-            if not name or name.startswith("_") or name.lower().endswith("/"):
-                continue
-            files.append({
-                "key": key,
-                "name": name,
-                "partner": _partner_of(key),
-                "size": int(obj.get("Size") or 0),
-                "modified": obj.get("LastModified").isoformat() if obj.get("LastModified") else "",
-                "etag": str(obj.get("ETag") or "").strip('"'),
-            })
-    files.sort(key=lambda item: item["modified"], reverse=True)
+    try:
+        s3 = _s3()
+        bucket = _bucket()
+        paginator = s3.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=bucket, Prefix=f"{LANDING_ROOT}/"):
+            for obj in page.get("Contents") or []:
+                key = str(obj.get("Key") or "")
+                name = key.rsplit("/", 1)[-1]
+                if not name or name.startswith("_") or name.lower().endswith("/"):
+                    continue
+                files.append({
+                    "key": key,
+                    "name": name,
+                    "partner": _partner_of(key),
+                    "size": int(obj.get("Size") or 0),
+                    "modified": obj.get("LastModified").isoformat() if obj.get("LastModified") else "",
+                    "etag": str(obj.get("ETag") or "").strip('"'),
+                })
+    except Exception as exc:
+        log_event(f"[SFTP] S3 list_landing skipped/error: {exc}", level="WARNING", component="SFTPIngest")
+
+    # Local landing folder fallback
+    if os.path.exists(LOCAL_LANDING_DIR):
+        for root, dirs, fnames in os.walk(LOCAL_LANDING_DIR):
+            for fname in fnames:
+                if fname.startswith(".") or fname.startswith("_"):
+                    continue
+                full_path = os.path.join(root, fname)
+                rel_path = os.path.relpath(full_path, LOCAL_LANDING_DIR).replace("\\", "/")
+                partner = rel_path.split("/")[0] if "/" in rel_path else "manual"
+                key = f"{LANDING_ROOT}/{partner}/{fname}"
+                if not any(f["key"] == key for f in files):
+                    stat = os.stat(full_path)
+                    mtime = datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(timespec="seconds")
+                    files.append({
+                        "key": key,
+                        "name": fname,
+                        "partner": partner,
+                        "size": stat.st_size,
+                        "modified": mtime,
+                        "etag": "local",
+                        "local_path": full_path,
+                    })
+    files.sort(key=lambda item: str(item.get("modified") or ""), reverse=True)
     return files
 
 
@@ -327,12 +407,27 @@ def upload(filename: str, data: bytes, partner: str = "manual") -> Dict[str, Any
     safe_partner = _slug(partner).lower() or "manual"
     safe_name = re.sub(r"[^A-Za-z0-9._-]+", "_", os.path.basename(filename))
     key = f"{LANDING_ROOT}/{safe_partner}/{safe_name}"
-    _s3().put_object(Bucket=_bucket(), Key=key, Body=data,
-                     ContentType="application/octet-stream",
-                     Metadata={"sha256": hashlib.sha256(data).hexdigest(), "uploaded_by": "nanopro"})
-    log_event(f"[SFTP] landed {key} ({len(data)} bytes)", component="SFTPIngest")
+    local_target = os.path.join(LOCAL_LANDING_DIR, safe_partner, safe_name)
+    try:
+        os.makedirs(os.path.dirname(local_target), exist_ok=True)
+        with open(local_target, "wb") as f:
+            f.write(data)
+    except Exception as exc:
+        log_event(f"[SFTP] local landing save error: {exc}", level="WARNING", component="SFTPIngest")
+
+    s3_uploaded = False
+    try:
+        _s3().put_object(Bucket=_bucket(), Key=key, Body=data,
+                         ContentType="application/octet-stream",
+                         Metadata={"sha256": hashlib.sha256(data).hexdigest(), "uploaded_by": "nanopro"})
+        s3_uploaded = True
+    except Exception as exc:
+        log_event(f"[SFTP] S3 put_object skipped/fallback to local: {exc}", level="WARNING", component="SFTPIngest")
+
+    log_event(f"[SFTP] landed {key} ({len(data)} bytes) [s3={s3_uploaded}]", component="SFTPIngest")
     return {"status": "uploaded", "key": key, "bytes": len(data),
-            "s3_uri": f"s3://{_bucket()}/{key}"}
+            "s3_uri": f"s3://{_bucket()}/{key}" if s3_uploaded else "",
+            "local_path": local_target}
 
 
 def ingest(key: str, force: bool = False) -> Dict[str, Any]:
@@ -341,7 +436,15 @@ def ingest(key: str, force: bool = False) -> Dict[str, Any]:
         filename = key.rsplit("/", 1)[-1]
         partner = _partner_of(key)
         bucket = _bucket()
-        body = _s3().get_object(Bucket=bucket, Key=key)["Body"].read()
+        try:
+            body = _s3().get_object(Bucket=bucket, Key=key)["Body"].read()
+        except Exception:
+            local_src = os.path.join(LOCAL_LANDING_DIR, partner, filename)
+            if os.path.exists(local_src):
+                with open(local_src, "rb") as lf:
+                    body = lf.read()
+            else:
+                raise
         digest = hashlib.sha256(body).hexdigest()
         state = _read_state()
         previous = state["files"].get(key) or {}
@@ -356,10 +459,20 @@ def ingest(key: str, force: bool = False) -> Dict[str, Any]:
             parquet, columns = _parquet_bytes(frame)
             table = _table_of(partner, filename)
             bronze_key = f"{BRONZE_ROOT}/{partner}/{table}/{table}.parquet"
-            _s3().put_object(Bucket=bucket, Key=bronze_key, Body=parquet,
-                             ContentType="application/vnd.apache.parquet",
-                             Metadata={"sha256": hashlib.sha256(parquet).hexdigest(),
-                                       "rows": str(len(frame)), "source": key})
+            try:
+                _s3().put_object(Bucket=bucket, Key=bronze_key, Body=parquet,
+                                 ContentType="application/vnd.apache.parquet",
+                                 Metadata={"sha256": hashlib.sha256(parquet).hexdigest(),
+                                           "rows": str(len(frame)), "source": key})
+            except Exception:
+                pass
+            try:
+                local_b = os.path.join(LOCAL_BRONZE_DIR, partner, table, f"{table}.parquet")
+                os.makedirs(os.path.dirname(local_b), exist_ok=True)
+                with open(local_b, "wb") as bf:
+                    bf.write(parquet)
+            except Exception:
+                pass
             manifest = _read_manifest(partner)
             manifest["files"] = [f for f in manifest["files"] if str(f.get("table")) != table]
             manifest["files"].append({
