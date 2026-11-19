@@ -3115,7 +3115,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       </div>
       <div class="ailab-conn-badge" id="ailabConnBadge" title="OpenRouter + DuckDB + BigQuery Active">
         <span class="ailab-pulse-dot"></span>
-        <span id="ailabConnText">4,750+ models</span>
+        <span id="ailabConnText">4,804+ models</span>
       </div>
       <div class="ailab-live-routed-badge" id="ailabLiveRoutedBadge" style="display:none;align-items:center;gap:6px;background:rgba(16,185,129,0.12);border:1.5px solid #10B981;box-shadow:0 0 12px rgba(16,185,129,0.3);border-radius:8px;padding:3px 10px;font-size:12px;color:#10B981;font-weight:700;white-space:nowrap;transition:all 0.3s ease;" title="Active Sovereign Model dynamically routed by Pareto + Thompson Bandit algorithm"></div>
     </div>
@@ -3126,6 +3126,23 @@ body.in-global_ai_lab .nano-dynamic-island {
         <select class="ailab-model-select" id="ailabModelSelect" onchange="ailabChangeModel(this.value)">
           <optgroup label="⚡ High-Tech Mathematical Router">
             <option value="auto" selected>⚡ AUTO Router</option>
+          </optgroup>
+          <optgroup label="🌐 Defapi Multi-Model Hub (44 Frontier Models · Gemini 4, GPT-6, Claude Fable)">
+            <option value="defapi/google/gemini-4-neon">Defapi Gemini 4 Neon</option>
+            <option value="defapi/google/gemini-4-hydrogen">Defapi Gemini 4 Hydrogen</option>
+            <option value="defapi/google/gemini-3.7-flash">Defapi Gemini 3.7 Flash</option>
+            <option value="defapi/anthropic/claude-fable-5-2">Defapi Claude Fable 5.2</option>
+            <option value="defapi/anthropic/claude-opus-5.5">Defapi Claude Opus 5.5</option>
+            <option value="defapi/openai/gpt-6-astra">Defapi GPT-6 Astra</option>
+            <option value="defapi/openai/gpt-5.6-luna">Defapi GPT-5.6 Luna</option>
+            <option value="defapi/openai/sora-2-pro">Defapi Sora 2 Pro</option>
+          </optgroup>
+          <optgroup label="⚡ TypeSafe AI JEV (System One Fast Reasoning & Decision Engine)">
+            <option value="jev/jev-latest">JEV Latest (Sub-50ms Calibrated Decision)</option>
+            <option value="jev/jev-decision-fast">JEV Decision Fast Engine</option>
+            <option value="jev/jev-decision-deep">JEV Decision Deep Logic</option>
+            <option value="jev/typesafe/jev-1.13">TypeSafe JEV 1.13</option>
+            <option value="jev/jev-verifier-pro">JEV Verifier Pro</option>
           </optgroup>
           <optgroup label="🇮🇳 Krutrim AI (Ola Sovereign Cloud · Qwen 3.6, GPT-OSS 120B, Gemma 4)">
             <option value="krutrim/Qwen3.6-27B">Krutrim Qwen 3.6 27B</option>
@@ -3276,7 +3293,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         
       </div>
 
-      <button type="button" class="ailab-iconbtn" onclick="ailabOpenModelCatalogModal()" title="Browse model catalog (4,750+ models)">
+      <button type="button" class="ailab-iconbtn" onclick="ailabOpenModelCatalogModal()" title="Browse model catalog (4,804+ models)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
       </button>
     </div>
@@ -3437,7 +3454,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         <!-- Empty Hero State -->
         <div class="ailab-hero" id="ailabEmptyHero">
           <h2>🧠 NanoPro AI Lab</h2>
-          <p>One workspace for 4,750+ frontier models, durable chats, diagrams and projects.</p>
+          <p>One workspace for 4,804+ frontier models, durable chats, diagrams and projects.</p>
 
           <div class="ailab-pill-grid">
             <div class="ailab-pill-card" onclick="ailabSelectPreset('Write a high-performance Python FastAPI service with Pydantic v2 schemas and JWT auth.')">
@@ -3572,7 +3589,7 @@ body.in-global_ai_lab .nano-dynamic-island {
         <span style="font-size:20px;">🌐</span>
         <div>
           <h4 style="margin:0;font-size:16px;color:#F8FAFC;font-weight:800;">Global Frontier AI Model Registry</h4>
-          <p style="margin:0;font-size:11.5px;color:#94A3B8;">4,750+ Unified Models across OpenRouter (473), AI/ML API (995), Hugging Face (110+), Fal.ai, Replicate &amp; Groq</p>
+          <p style="margin:0;font-size:11.5px;color:#94A3B8;">4,804+ Unified Models across Defapi, Jev AI, OpenRouter (473), AI/ML API (995), Hugging Face (110+), Fal.ai, Replicate &amp; Groq</p>
         </div>
       </div>
 
@@ -3582,10 +3599,12 @@ body.in-global_ai_lab .nano-dynamic-island {
     </div>
     <div class="ailab-modal-search">
       <span style="font-size:16px;color:#8B5CF6;">🔍</span>
-      <input type="text" id="ailabModelSearchInput" placeholder="Search 4,750+ models by name, lab, provider, or capability (e.g. claude, deepseek, flux, qwen, free)..." oninput="ailabFilterModels()">
+      <input type="text" id="ailabModelSearchInput" placeholder="Search 4,804+ models by name, lab, provider, or capability (e.g. claude, deepseek, flux, qwen, free)..." oninput="ailabFilterModels()">
     </div>
     <div class="ailab-modal-pills">
-      <button type="button" class="ailab-pill is-active" onclick="ailabFilterModelCategory('all', this)">All Mesh (4,750+)</button>
+      <button type="button" class="ailab-pill is-active" onclick="ailabFilterModelCategory('all', this)">All Mesh (4,804+)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('defapi', this)">🌐 Defapi Hub (44)</button>
+      <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('jev', this)">⚡ TypeSafe JEV (10)</button>
       <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('krutrim', this)">🇮🇳 Krutrim AI (Ola)</button>
       <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('poe', this)">⚡ Poe by Quora (303)</button>
       <button type="button" class="ailab-pill" onclick="ailabFilterModelCategory('parasail', this)">⛵ Parasail (107)</button>
@@ -3683,7 +3702,7 @@ body.in-global_ai_lab .nano-dynamic-island {
               <span style="font-size:16px;font-weight:900;color:#F8FAFC;letter-spacing:0.5px;">CENTRAL AI MANAGER HOLOGRAPHIC STATION</span>
               <span style="background:rgba(56,189,248,0.18);color:#38BDF8;font-size:10px;font-weight:800;padding:2px 8px;border-radius:4px;border:1px solid rgba(56,189,248,0.3);">3D CYBER DATA CENTER HUB</span>
             </div>
-            <div style="font-size:12px;color:#94A3B8;margin-top:4px;">Autonomous Multi-Agent Orchestration Fleet &bull; 320 Autonomous Agents &bull; 4,750+ Frontier Models Mesh</div>
+            <div style="font-size:12px;color:#94A3B8;margin-top:4px;">Autonomous Multi-Agent Orchestration Fleet &bull; 320 Autonomous Agents &bull; 4,804+ Frontier Models Mesh</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;">
             <span style="background:rgba(16,185,129,0.15);color:#34D399;font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid rgba(16,185,129,0.3);">&#9679; AI Orchestrator: LIVE &amp; READY</span>
@@ -3700,7 +3719,7 @@ body.in-global_ai_lab .nano-dynamic-island {
           </div>
           <div style="background:rgba(30,41,59,0.7);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
             <div style="font-size:10.5px;color:#94A3B8;text-transform:uppercase;font-weight:700;">Frontier Model Mesh</div>
-            <div style="font-size:20px;font-weight:900;color:#A78BFA;margin-top:2px;">4,750+ <span style="font-size:11px;color:#C084FC;font-weight:600;">Models</span></div>
+            <div style="font-size:20px;font-weight:900;color:#A78BFA;margin-top:2px;">4,804+ <span style="font-size:11px;color:#C084FC;font-weight:600;">Models</span></div>
             <div style="font-size:10px;color:#64748B;">DeepSeek R1 &bull; Claude 3.7 &bull; o3-mini</div>
           </div>
           <div style="background:rgba(30,41,59,0.7);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px;">
@@ -5287,7 +5306,10 @@ body.in-global_ai_lab .nano-dynamic-island {
       "ola": { lab_name: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign AI Cloud" },
       "poe": { lab_name: "Poe by Quora", country: "United States", flag: "⚡", tier: "300+ Unified Bot Fabric" },
       "parasail": { lab_name: "Parasail GPU Network", country: "Global", flag: "⛵", tier: "100+ Decentralized GPU Models" },
-      "arcee": { lab_name: "Arcee AI", country: "United States", flag: "🏹", tier: "Domain Specialized SLMs" }
+      "arcee": { lab_name: "Arcee AI", country: "United States", flag: "🏹", tier: "Domain Specialized SLMs" },
+      "defapi": { lab_name: "Defapi Frontier Hub", country: "United States", flag: "🌐", tier: "Next-Gen Frontier Mesh" },
+      "jev": { lab_name: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "System One Fast Reasoning" },
+      "typesafe": { lab_name: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "System One Fast Reasoning" }
     };
 
     if (DIRECTORY[prefix]) {
@@ -5319,7 +5341,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       
       const badge = $id("ailabConnText");
       if (badge) {
-        badge.textContent = "4,750+ Models Unified Mesh";
+        badge.textContent = "4,804+ Models Unified Mesh";
       }
       if (data.models && data.models.length > 0) {
         cachedCatalogModels = data.models;
@@ -5331,6 +5353,8 @@ body.in-global_ai_lab .nano-dynamic-island {
       const currentVal = AILAB.selectedModel || select.value || "auto";
 
       const groups = {
+        defapi: [],
+        jev: [],
         krutrim: [],
         poe: [],
         edenai: [],
@@ -5361,7 +5385,11 @@ body.in-global_ai_lab .nano-dynamic-island {
           const item = { id: m.id, name: displayName };
           const pfx = (m.id.split("/")[0] || "").toLowerCase();
 
-          if (pfx === "krutrim" || pfx === "ola") {
+          if (pfx === "defapi") {
+            groups.defapi.push(item);
+          } else if (pfx === "jev" || pfx === "typesafe") {
+            groups.jev.push(item);
+          } else if (pfx === "krutrim" || pfx === "ola") {
             groups.krutrim.push(item);
           } else if (pfx === "poe") {
             groups.poe.push(item);
@@ -5402,6 +5430,8 @@ body.in-global_ai_lab .nano-dynamic-island {
 
         const optHtml = [
           `<optgroup label="⚡ High-Tech Mathematical Router"><option value="auto">⚡ AUTO Router</option></optgroup>`,
+          groups.defapi.length ? `<optgroup label="🌐 Defapi Multi-Model Hub (${groups.defapi.length} Frontier Models)">${groups.defapi.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join("")}</optgroup>` : "",
+          groups.jev.length ? `<optgroup label="⚡ TypeSafe AI JEV (${groups.jev.length} Decision Models)">${groups.jev.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join("")}</optgroup>` : "",
           groups.krutrim.length ? `<optgroup label="🇮🇳 Krutrim AI (Ola Sovereign Cloud · ${groups.krutrim.length} Models)">${groups.krutrim.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join("")}</optgroup>` : "",
           groups.poe.length ? `<optgroup label="⚡ Poe by Quora (${groups.poe.length} Unified Bot Models)">${groups.poe.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join("")}</optgroup>` : "",
           groups.edenai.length ? `<optgroup label="🌿 Eden AI (${groups.edenai.length} Unified Models · OpenAI, Anthropic, Gemini, Mistral)">${groups.edenai.map(m => `<option value="${escapeHtml(m.id)}">${escapeHtml(m.name)}</option>`).join("")}</optgroup>` : "",
@@ -6215,7 +6245,7 @@ body.in-global_ai_lab .nano-dynamic-island {
       </div>
       <div class="ailab-bubble ailab-asst-bubble" style="color:#94A3B8; display:flex; align-items:center; gap:10px;">
         <span class="ailab-spinner-dot"></span>
-        <span>Synthesizing response across 4,750+ specialized models...</span>
+        <span>Synthesizing response across 4,804+ specialized models...</span>
       </div>
     `;
     container.appendChild(assistantPlaceholder);
@@ -7490,7 +7520,25 @@ body.in-global_ai_lab .nano-dynamic-island {
           // Arcee AI (Domain-Specialized SLMs)
           { id: "arcee/zai-org/glm-5.3-flash", name: "Arcee GLM 5.3 Flash", lab: "Arcee AI", country: "United States", flag: "🏹", is_free: true },
           { id: "arcee/deepseek/deepseek-v4.1-flash", name: "Arcee DeepSeek V4.1 Flash", lab: "Arcee AI", country: "United States", flag: "🏹", is_free: false },
-          { id: "arcee/moonshotai/kimi-k3.1-pro", name: "Arcee Kimi K3.1 Pro", lab: "Arcee AI", country: "United States", flag: "🏹", is_free: false }
+          { id: "arcee/moonshotai/kimi-k3.1-pro", name: "Arcee Kimi K3.1 Pro", lab: "Arcee AI", country: "United States", flag: "🏹", is_free: false },
+          // Defapi Multi-Model Frontier Hub (44 Models)
+          { id: "defapi/alibaba/wan-2.7-image", name: "Defapi Wan 2.7 Image", lab: "Defapi Hub", country: "China", flag: "🇨🇳", is_free: false },
+          { id: "defapi/anthropic/claude-fable-5-2", name: "Defapi Claude Fable 5.2", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", is_free: false },
+          { id: "defapi/anthropic/claude-opus-5.5", name: "Defapi Claude Opus 5.5", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", is_free: false },
+          { id: "defapi/google/gemini-3.7-flash", name: "Defapi Gemini 3.7 Flash", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", is_free: false },
+          { id: "defapi/google/gemini-4-hydrogen", name: "Defapi Gemini 4 Hydrogen", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", is_free: false },
+          { id: "defapi/google/gemini-4-neon", name: "Defapi Gemini 4 Neon", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", is_free: false },
+          { id: "defapi/google/nano-banana-pro", name: "Defapi Nano Banana Pro", lab: "Defapi Hub", country: "United States", flag: "🍌", is_free: true },
+          { id: "defapi/openai/gpt-5.6-luna", name: "Defapi GPT-5.6 Luna", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", is_free: false },
+          { id: "defapi/openai/gpt-6-astra", name: "Defapi GPT-6 Astra", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", is_free: false },
+          { id: "defapi/openai/sora-2-pro", name: "Defapi Sora 2 Pro", lab: "Defapi Hub", country: "United States", flag: "🎥", is_free: false },
+          { id: "defapi/suno/chirp-v4-5", name: "Defapi Chirp v4.5", lab: "Defapi Hub", country: "United States", flag: "🎵", is_free: false },
+          // TypeSafe AI JEV Decision Mesh (10 Models)
+          { id: "jev/jev-latest", name: "JEV Latest (Sub-50ms Calibrated Decision)", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", is_free: true },
+          { id: "jev/jev-decision-fast", name: "JEV Decision Fast Engine", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", is_free: true },
+          { id: "jev/jev-decision-deep", name: "JEV Decision Deep Logic", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", is_free: false },
+          { id: "jev/typesafe/jev-1.13", name: "TypeSafe JEV 1.13", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", is_free: false },
+          { id: "jev/jev-verifier-pro", name: "JEV Verifier Pro", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", is_free: false }
         ];
       }
 
@@ -7498,6 +7546,8 @@ body.in-global_ai_lab .nano-dynamic-island {
         const prov = ailabResolveModelProvenance(m.id);
         const mName = (m.name || prov.clean_name || m.id || "");
         const isFree = m.is_free || m.id.includes(":free");
+        if (currentCatalogCategory === "defapi" && !m.id.startsWith("defapi/") && !(m.lab && m.lab.includes("Defapi"))) return false;
+        if (currentCatalogCategory === "jev" && !m.id.startsWith("jev/") && !m.id.startsWith("typesafe/") && !(m.lab && m.lab.includes("JEV"))) return false;
         if (currentCatalogCategory === "krutrim" && !m.id.startsWith("krutrim/") && !(m.lab && m.lab.includes("Krutrim"))) return false;
         if (currentCatalogCategory === "poe" && !m.id.startsWith("poe/") && !(m.lab && m.lab.includes("Poe"))) return false;
         if (currentCatalogCategory === "parasail" && !m.id.startsWith("parasail/") && !(m.lab && m.lab.includes("Parasail"))) return false;

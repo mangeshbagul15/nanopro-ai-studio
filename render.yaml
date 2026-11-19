@@ -65,3 +65,11 @@ services:
         value: JcMcoC72Osu3suH8oVvy-2An4
       - key: POE_API_KEY
         value: sk-poe-Q_PHEUPo8oUxy-FGHxCy4y2cMbtJSx5y0hprJLGDXcY
+      - key: DEFAPI_API_KEY
+        value: dk-8ad11ada1f8d9ea75cc20cb1fc55cbed
+      - key: DEFAPI_BASE_URL
+        value: https://api.defapi.org/v1
+      - key: JEV_API_KEY
+        value: sk_jev-ai_TeTWU37d7VrPE3iepqXdFs4f42RRfeFI
+      - key: JEV_BASE_URL
+        value: https://jevtypesafeai.com/api/v1

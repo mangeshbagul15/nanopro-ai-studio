@@ -176,3 +176,9 @@ PARASAIL_API_KEY = os.environ.get("PARASAIL_API_KEY", "psk-nano6dc5de4t-PtQ50R9k
 KRUTRIM_API_KEY = os.environ.get("KRUTRIM_API_KEY", "JcMcoC72Osu3suH8oVvy-2An4").strip()
 POE_API_KEY = os.environ.get("POE_API_KEY", "sk-poe-Q_PHEUPo8oUxy-FGHxCy4y2cMbtJSx5y0hprJLGDXcY").strip()
 BASETEN_API_KEY_2 = os.environ.get("BASETEN_API_KEY_2", "b10_opZ4nBmj.wzha2FItX9WeW0bgaQAlSqSXOsV2v0XY").strip()
+
+# Defapi & Jev AI Mesh (4,804+ Models)
+DEFAPI_API_KEY = os.environ.get("DEFAPI_API_KEY", "dk-8ad11ada1f8d9ea75cc20cb1fc55cbed").strip()
+DEFAPI_BASE_URL = os.environ.get("DEFAPI_BASE_URL", "https://api.defapi.org/v1").strip()
+JEV_API_KEY = os.environ.get("JEV_API_KEY", "sk_jev-ai_TeTWU37d7VrPE3iepqXdFs4f42RRfeFI").strip()
+JEV_BASE_URL = os.environ.get("JEV_BASE_URL", "https://jevtypesafeai.com/api/v1").strip()

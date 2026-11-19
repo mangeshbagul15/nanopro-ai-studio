@@ -316,7 +316,7 @@ class NanoProMCPServer:
             },
             {
                 "name": "nanopro_global_ai_execute",
-                "description": "Executes AI prompt through zero-load streaming connectors using any requested model (4,750+ models across 23 sovereign providers including Krutrim, Poe, Parasail, Arcee, Eden AI, Requesty, NVIDIA NIM, SambaNova, Cloudflare Workers AI, Novita, DeepInfra, Mistral, DeepSeek, Groq, Hugging Face, OpenRouter) or 'auto' for intelligent mathematical routing with automatic 429 failover. Strictly 0 MB Render RAM overhead.",
+                "description": "Executes AI prompt through zero-load streaming connectors using any requested model (4,804+ models across 25 sovereign providers including Defapi, Jev AI, Krutrim, Poe, Parasail, Arcee, Eden AI, Requesty, NVIDIA NIM, SambaNova, Cloudflare Workers AI, Novita, DeepInfra, Mistral, DeepSeek, Groq, Hugging Face, OpenRouter) or 'auto' for intelligent mathematical routing with automatic 429 failover. Strictly 0 MB Render RAM overhead.",
                 "inputSchema": {
                     "type": "object",
                     "properties": {

@@ -2742,6 +2742,8 @@ export default {
       ARCEE: "rcai-c472ef2f4f2ad7362f6decf31f65c047",
       PARASAIL: "psk-nano6dc5de4t-PtQ50R9kBFZAbECjwk6W",
       KRUTRIM: "JcMcoC72Osu3suH8oVvy-2An4",
+      DEFAPI: "dk-8ad11ada1f8d9ea75cc20cb1fc55cbed",
+      JEV: "sk_jev-ai_TeTWU37d7VrPE3iepqXdFs4f42RRfeFI",
       POE: "sk-poe-Q_PHEUPo8oUxy-FGHxCy4y2cMbtJSx5y0hprJLGDXcY",
       BASETEN_2: "b10_opZ4nBmj.wzha2FItX9WeW0bgaQAlSqSXOsV2v0XY",
       MISTRAL: "mstrl_OZwEdSDxbLIE8xd9Sg0i3wDLH2l2wOnQ_1OV8Q4",
@@ -2772,7 +2774,7 @@ export default {
     const EDGE_MCP_TOOLS_MANIFEST = [
       {
         name: "nanopro_global_ai_execute",
-        description: "Executes AI prompt through zero-load streaming connectors using any requested model (4,750+ models across 23 sovereign providers including Krutrim, Poe, Parasail, Arcee, Eden AI, Requesty, NVIDIA NIM, SambaNova, Cloudflare Workers AI, Novita, DeepInfra, Mistral, DeepSeek, Groq, Hugging Face, OpenRouter) or 'auto' for intelligent mathematical routing with automatic 429 failover. Strictly 0 MB Render RAM overhead.",
+        description: "Executes AI prompt through zero-load streaming connectors using any requested model (4,804+ models across 23 sovereign providers including Krutrim, Poe, Parasail, Arcee, Eden AI, Requesty, NVIDIA NIM, SambaNova, Cloudflare Workers AI, Novita, DeepInfra, Mistral, DeepSeek, Groq, Hugging Face, OpenRouter) or 'auto' for intelligent mathematical routing with automatic 429 failover. Strictly 0 MB Render RAM overhead.",
         inputSchema: {
           type: "object",
           properties: {
@@ -3133,7 +3135,66 @@ export default {
               // Arcee AI (Domain-Specialized SLMs)
               { id: "arcee/zai-org/glm-5.3-flash", name: "Arcee GLM 5.3 Flash", lab: "Arcee AI", country: "United States", flag: "🏹", tier: "Domain SLM", context: 32768, is_free: true },
               { id: "arcee/deepseek/deepseek-v4.1-flash", name: "Arcee DeepSeek V4.1 Flash", lab: "Arcee AI", country: "United States", flag: "🏹", tier: "Domain SLM", context: 65536, is_free: false },
-              { id: "arcee/moonshotai/kimi-k3.1-pro", name: "Arcee Kimi K3.1 Pro", lab: "Arcee AI", country: "United States", flag: "🏹", tier: "Long Context SLM", context: 1048576, is_free: false }
+              { id: "arcee/moonshotai/kimi-k3.1-pro", name: "Arcee Kimi K3.1 Pro", lab: "Arcee AI", country: "United States", flag: "🏹", tier: "Long Context SLM", context: 1048576, is_free: false },
+              // Defapi Multi-Model Frontier Hub (44 Models)
+              { id: "defapi/alibaba/wan-2.7-image", name: "Defapi Wan 2.7 Image", lab: "Defapi Hub", country: "China", flag: "🇨🇳", tier: "Generative Image", context: 32768, is_free: false },
+              { id: "defapi/anthropic/claude-fable-5", name: "Defapi Claude Fable 5", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Frontier Ultra", context: 500000, is_free: false },
+              { id: "defapi/anthropic/claude-fable-5-2", name: "Defapi Claude Fable 5.2", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Frontier Ultra", context: 500000, is_free: false },
+              { id: "defapi/anthropic/claude-opus-4.7", name: "Defapi Claude Opus 4.7", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Cognitive Logic", context: 200000, is_free: false },
+              { id: "defapi/anthropic/claude-opus-4.8", name: "Defapi Claude Opus 4.8", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Cognitive Logic", context: 200000, is_free: false },
+              { id: "defapi/anthropic/claude-opus-5", name: "Defapi Claude Opus 5", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Cognitive Logic", context: 200000, is_free: false },
+              { id: "defapi/anthropic/claude-opus-5.5", name: "Defapi Claude Opus 5.5", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Cognitive Logic", context: 200000, is_free: false },
+              { id: "defapi/bytedance/seedance-2.0", name: "Defapi Seedance 2.0", lab: "Defapi Hub", country: "China", flag: "🇨🇳", tier: "Motion & Video", context: 65536, is_free: false },
+              { id: "defapi/cloudflare/clef", name: "Defapi Cloudflare Clef", lab: "Defapi Hub", country: "United States", flag: "☁️", tier: "Audio & Music", context: 32768, is_free: false },
+              { id: "defapi/cloudflare/clef-flash", name: "Defapi Cloudflare Clef Flash", lab: "Defapi Hub", country: "United States", flag: "☁️", tier: "Fast Audio SLA", context: 32768, is_free: false },
+              { id: "defapi/defapi/laya-0.3.20", name: "Defapi Laya 0.3.20", lab: "Defapi Hub", country: "Global", flag: "🌐", tier: "Autonomous Agent", context: 65536, is_free: false },
+              { id: "defapi/google/gemini-3-flash", name: "Defapi Gemini 3 Flash", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Multimodal Flash", context: 1048576, is_free: false },
+              { id: "defapi/google/gemini-3-pro", name: "Defapi Gemini 3 Pro", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Multimodal Pro", context: 2097152, is_free: false },
+              { id: "defapi/google/gemini-3.1-pro-preview", name: "Defapi Gemini 3.1 Pro Preview", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Multimodal Pro Preview", context: 2097152, is_free: false },
+              { id: "defapi/google/gemini-3.7-flash", name: "Defapi Gemini 3.7 Flash", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Ultra High Speed", context: 1048576, is_free: false },
+              { id: "defapi/google/gemini-4-hydrogen", name: "Defapi Gemini 4 Hydrogen", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Next-Gen Omnimodal", context: 2097152, is_free: false },
+              { id: "defapi/google/gemini-4-neon", name: "Defapi Gemini 4 Neon", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Next-Gen Omnimodal", context: 2097152, is_free: false },
+              { id: "defapi/google/nano-banana", name: "Defapi Nano Banana", lab: "Defapi Hub", country: "United States", flag: "🍌", tier: "Ultra-Lightweight Edge", context: 32768, is_free: true },
+              { id: "defapi/google/nano-banana-2", name: "Defapi Nano Banana 2", lab: "Defapi Hub", country: "United States", flag: "🍌", tier: "Ultra-Lightweight Edge", context: 65536, is_free: true },
+              { id: "defapi/google/nano-banana-2-lite", name: "Defapi Nano Banana 2 Lite", lab: "Defapi Hub", country: "United States", flag: "🍌", tier: "Micro Inference SLA", context: 32768, is_free: true },
+              { id: "defapi/google/nano-banana-pro", name: "Defapi Nano Banana Pro", lab: "Defapi Hub", country: "United States", flag: "🍌", tier: "Edge Pro Reasoning", context: 131072, is_free: true },
+              { id: "defapi/google/veo3-fast", name: "Defapi Veo 3 Fast", lab: "Defapi Hub", country: "United States", flag: "🎬", tier: "Cinematic Video Fast", context: 65536, is_free: false },
+              { id: "defapi/google/veo3-pro", name: "Defapi Veo 3 Pro", lab: "Defapi Hub", country: "United States", flag: "🎬", tier: "Cinematic Video Pro", context: 131072, is_free: false },
+              { id: "defapi/google/veo3.1", name: "Defapi Veo 3.1", lab: "Defapi Hub", country: "United States", flag: "🎬", tier: "Cinematic Video 4K", context: 131072, is_free: false },
+              { id: "defapi/google/veo3.1-components", name: "Defapi Veo 3.1 Components", lab: "Defapi Hub", country: "United States", flag: "🎬", tier: "VFX Pipeline Video", context: 65536, is_free: false },
+              { id: "defapi/google/veo3.1-fast", name: "Defapi Veo 3.1 Fast", lab: "Defapi Hub", country: "United States", flag: "🎬", tier: "Cinematic Video Fast", context: 65536, is_free: false },
+              { id: "defapi/midjourney/describe", name: "Defapi Midjourney Describe", lab: "Defapi Hub", country: "United States", flag: "🎨", tier: "Image Understanding", context: 32768, is_free: false },
+              { id: "defapi/midjourney/edits", name: "Defapi Midjourney Edits", lab: "Defapi Hub", country: "United States", flag: "🎨", tier: "Image Inpainting", context: 32768, is_free: false },
+              { id: "defapi/midjourney/imagine", name: "Defapi Midjourney Imagine", lab: "Defapi Hub", country: "United States", flag: "🎨", tier: "Generative Art", context: 32768, is_free: false },
+              { id: "defapi/openai/gpt-5.2", name: "Defapi GPT-5.2", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Frontier Foundation", context: 524288, is_free: false },
+              { id: "defapi/openai/gpt-5.4", name: "Defapi GPT-5.4", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Frontier Foundation", context: 1048576, is_free: false },
+              { id: "defapi/openai/gpt-5.5", name: "Defapi GPT-5.5", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Frontier Reasoning", context: 1048576, is_free: false },
+              { id: "defapi/openai/gpt-5.6-luna", name: "Defapi GPT-5.6 Luna", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Fast Production", context: 524288, is_free: false },
+              { id: "defapi/openai/gpt-5.6-sol", name: "Defapi GPT-5.6 Sol", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Creative Synthesis", context: 524288, is_free: false },
+              { id: "defapi/openai/gpt-5.6-terra", name: "Defapi GPT-5.6 Terra", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Deep Logic", context: 524288, is_free: false },
+              { id: "defapi/openai/gpt-6-astra", name: "Defapi GPT-6 Astra", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Super-Frontier SOTA", context: 1048576, is_free: false },
+              { id: "defapi/openai/gpt-6-luna", name: "Defapi GPT-6 Luna", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Super-Frontier Agile", context: 1048576, is_free: false },
+              { id: "defapi/openai/gpt-6-sol", name: "Defapi GPT-6 Sol", lab: "Defapi Hub", country: "United States", flag: "🇺🇸", tier: "Super-Frontier Deep", context: 1048576, is_free: false },
+              { id: "defapi/openai/gpt-image-2", name: "Defapi GPT Image 2", lab: "Defapi Hub", country: "United States", flag: "🎨", tier: "Omnimodal Vision", context: 131072, is_free: false },
+              { id: "defapi/openai/sora-2", name: "Defapi Sora 2", lab: "Defapi Hub", country: "United States", flag: "🎥", tier: "Neural Video Diffusion", context: 131072, is_free: false },
+              { id: "defapi/openai/sora-2-pro", name: "Defapi Sora 2 Pro", lab: "Defapi Hub", country: "United States", flag: "🎥", tier: "High Fidelity Video", context: 131072, is_free: false },
+              { id: "defapi/openai/sora-2-stable", name: "Defapi Sora 2 Stable", lab: "Defapi Hub", country: "United States", flag: "🎥", tier: "Coherent Physical Video", context: 131072, is_free: false },
+              { id: "defapi/suno/chirp-crow", name: "Defapi Chirp Crow", lab: "Defapi Hub", country: "United States", flag: "🎵", tier: "Music Generation", context: 32768, is_free: false },
+              { id: "defapi/suno/chirp-v3-5", name: "Defapi Chirp v3.5", lab: "Defapi Hub", country: "United States", flag: "🎵", tier: "Music Generation", context: 32768, is_free: false },
+              { id: "defapi/suno/chirp-v4-5", name: "Defapi Chirp v4.5", lab: "Defapi Hub", country: "United States", flag: "🎵", tier: "Vocal Music Studio", context: 65536, is_free: false },
+              { id: "defapi/typesafe/jev-1.13", name: "Defapi TypeSafe JEV 1.13", lab: "Defapi Hub", country: "United States", flag: "⚡", tier: "System One Decision", context: 65536, is_free: false },
+              { id: "defapi/xai/grok-imagine-video", name: "Defapi Grok Imagine Video", lab: "Defapi Hub", country: "United States", flag: "🎥", tier: "Video Generation", context: 65536, is_free: false },
+              // TypeSafe AI JEV Decision Mesh (10 Models)
+              { id: "jev/jev-latest", name: "JEV Latest (Sub-50ms Calibrated Decision)", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "System One Fast", context: 131072, is_free: true },
+              { id: "jev/jev-decision-fast", name: "JEV Decision Fast Engine", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "Ultra Low Latency <30ms", context: 65536, is_free: true },
+              { id: "jev/jev-decision-deep", name: "JEV Decision Deep Logic", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "Calibrated Logic SOTA", context: 131072, is_free: false },
+              { id: "jev/typesafe/jev-1.13", name: "TypeSafe JEV 1.13", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "Production Calibrated", context: 65536, is_free: false },
+              { id: "jev/jev-1.14.0", name: "TypeSafe JEV 1.14.0", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "Frontier Calibrated", context: 131072, is_free: false },
+              { id: "jev/jev-critic", name: "JEV Critic & Alignment", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "Adversarial Verifier", context: 65536, is_free: false },
+              { id: "jev/jev-planner", name: "JEV Fast Path Planner", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "Monte Carlo Decision Tree", context: 65536, is_free: false },
+              { id: "jev/jev-verifier", name: "JEV Verifier Engine", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "Deterministic Guard", context: 65536, is_free: true },
+              { id: "jev/jev-verifier-pro", name: "JEV Verifier Pro", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "Formal Verification", context: 131072, is_free: false },
+              { id: "jev/jev-quant", name: "JEV Quant Decision Core", lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "High Frequency Math", context: 65536, is_free: false }
             ];
 
             const combinedModels = [...providerAddons, ...models];
@@ -3735,7 +3796,7 @@ const BANKING_EXCEL_STORE = {"NANOPRO_BANKING_REPORTS_EOD_20261119_200425.xlsx":
       const edgeCatalog = {
         status: "success",
         total_labs: 32,
-        total_models: liveModels ? (liveModels.length + 995 + 177 + 110 + 99 + 150 + 56 + 75 + 11) : 2150,
+        total_models: liveModels ? (liveModels.length + 1311 + 750 + 995 + 303 + 177 + 150 + 110 + 107 + 99 + 83 + 56 + 44 + 11 + 10 + 9 + 6 + 5) : 4804,
         openrouter_connected: true,
         edge_accelerated: true,
         categories: {
@@ -3904,7 +3965,10 @@ const BANKING_EXCEL_STORE = {"NANOPRO_BANKING_REPORTS_EOD_20261119_200425.xlsx":
         "ola": { lab: "Krutrim AI (Ola)", country: "India", flag: "🇮🇳", tier: "Indic Sovereign AI Cloud" },
         "poe": { lab: "Poe by Quora", country: "United States", flag: "⚡", tier: "300+ Unified Bot Fabric" },
         "parasail": { lab: "Parasail GPU Network", country: "Global", flag: "⛵", tier: "100+ Decentralized GPU Models" },
-        "arcee": { lab: "Arcee AI", country: "United States", flag: "🏹", tier: "Domain Specialized SLMs" }
+        "arcee": { lab: "Arcee AI", country: "United States", flag: "🏹", tier: "Domain Specialized SLMs" },
+        "defapi": { lab: "Defapi Frontier Hub", country: "United States", flag: "🌐", tier: "Next-Gen Frontier Mesh" },
+        "jev": { lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "System One Fast Reasoning" },
+        "typesafe": { lab: "TypeSafe AI (JEV)", country: "United States", flag: "⚡", tier: "System One Fast Reasoning" }
       };
 
       const resolved = LAB_DIRECTORY[prefix] || {
@@ -3966,7 +4030,7 @@ LAYER 1: 🖥️ UI & WORKSPACE FABRIC (ANTIGRAVITY MATTE DESIGN):
 - Antigravity / Claude Code-inspired modern matte dark design (#0D1117 background, #161B22 cards, soft #C9D1D9 text, zero harsh glow).
 - Multi-View Workspace Navigation:
   * #dashboard: Real-time Executive KPIs, Banking Metrics, System Health, and Quick Actions.
-  * #global_ai_lab: Frontier AI Multi-Model Mesh (4,750+ models), Pareto Auto-Router, Interactive Chat, and Mathematical Details Accordion.
+  * #global_ai_lab: Frontier AI Multi-Model Mesh (4,804+ models), Pareto Auto-Router, Interactive Chat, and Mathematical Details Accordion.
   * #airflow_hub: Apache Airflow 8 Production DAGs Manager, EOD T-1 Batch Processing, and WinSCP SFTP Hub.
   * #sql_studio: Live SQL & DDL Query IDE with multi-database execution against DuckDB, Snowflake, BigQuery.
 - Database Explorer Tree — the ONLY authoritative source for live databases, datasets, schemas, tables and counts is the Data Explorer catalog (\`/api/ai/explorer/catalog\`). The design notes in this brief (BANK_DB, RAW_*, FACT_*, MART_* names, "4 databases") are historical templates for the intended banking lakehouse, NOT verified live objects. Never present them as the current live schema.
@@ -4840,6 +4904,60 @@ CRITICAL OPERATIONAL RULES:
         }
       }
 
+      async function callDefapi(targetModel, timeoutMs = 7000) {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const cleanModel = targetModel.replace(/^defapi\//, "");
+          const resp = await fetch("https://api.defapi.org/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${MULTI_PROVIDER_KEYS.DEFAPI}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: cleanModel,
+              messages: messages,
+              temperature: 0.7,
+              max_tokens: 2048
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(tid);
+          return resp;
+        } catch (_) {
+          clearTimeout(tid);
+          return null;
+        }
+      }
+
+      async function callJevAI(targetModel, timeoutMs = 7000) {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+          const cleanModel = targetModel.replace(/^jev\//, "").replace(/^typesafe\//, "");
+          const resp = await fetch("https://jevtypesafeai.com/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${MULTI_PROVIDER_KEYS.JEV}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              model: cleanModel,
+              messages: messages,
+              temperature: 0.7,
+              max_tokens: 2048
+            }),
+            signal: controller.signal
+          });
+          clearTimeout(tid);
+          return resp;
+        } catch (_) {
+          clearTimeout(tid);
+          return null;
+        }
+      }
+
       async function callKrutrimAI(targetModel, timeoutMs = 7000) {
         const controller = new AbortController();
         const tid = setTimeout(() => controller.abort(), timeoutMs);
@@ -5206,6 +5324,21 @@ CRITICAL OPERATIONAL RULES:
           if (!resp || !resp.ok) {
             activeProvider = "OPENROUTER_FALLBACK";
             resp = await callOR("meta-llama/llama-3.3-70b-instruct", 8500);
+          }
+        } else if (model.startsWith("defapi/")) {
+          activeProvider = "DEFAPI_FRONTIER_HUB";
+          resp = await callDefapi(model, 6500);
+          if (!resp || !resp.ok) {
+            activeProvider = "OPENROUTER_FALLBACK";
+            const fallbackModel = model.replace(/^defapi\//, "");
+            resp = await callOR(fallbackModel, 8500);
+          }
+        } else if (model.startsWith("jev/") || model.startsWith("typesafe/")) {
+          activeProvider = "JEV_TYPESAFE_AI";
+          resp = await callJevAI(model, 6500);
+          if (!resp || !resp.ok) {
+            activeProvider = "OPENROUTER_FALLBACK";
+            resp = await callOR("deepseek/deepseek-r1", 8500);
           }
         } else if (model.startsWith("arcee/")) {
           activeProvider = "ARCEE_AI_SLM";
@@ -6689,7 +6822,7 @@ CRITICAL OPERATIONAL RULES:
           resources: [
             {
               uri: "nanopro://ai/global_catalog",
-              name: "World Foundational AI Catalog (4,750+ Models)",
+              name: "World Foundational AI Catalog (4,804+ Models)",
               mimeType: "application/json"
             }
           ],
@@ -6717,7 +6850,7 @@ CRITICAL OPERATIONAL RULES:
           protocol: "2024-11-05",
           gateway: "Cloudflare-Zero-Render-Load",
           render_ram_overhead: "0 MB (Guaranteed Zero-Suspension)",
-          total_models: "4,750+ Unified Mesh across 23 Sovereign Providers",
+          total_models: "4,804+ Unified Mesh across 25 Sovereign Providers",
           total_tools: EDGE_MCP_TOOLS_MANIFEST.length,
           manifest_url: `${url.origin}/mcp/manifest`,
           tools_url: `${url.origin}/api/mcp/tools`
@@ -6782,7 +6915,7 @@ CRITICAL OPERATIONAL RULES:
               resources: [
                 {
                   uri: "nanopro://ai/global_catalog",
-                  name: "World Foundational AI Catalog (4,750+ Models)",
+                  name: "World Foundational AI Catalog (4,804+ Models)",
                   mimeType: "application/json"
                 }
               ]
@@ -6809,7 +6942,7 @@ CRITICAL OPERATIONAL RULES:
           const toolName = params.name || "";
           const toolArgs = params.arguments || {};
 
-          // 1. TOOL: nanopro_global_ai_execute (All 4,750+ Models via Edge)
+          // 1. TOOL: nanopro_global_ai_execute (All 4,804+ Models via Edge)
           if (toolName === "nanopro_global_ai_execute") {
             const prompt = toolArgs.prompt || "";
             const model = toolArgs.model || "auto";
@@ -6870,15 +7003,15 @@ CRITICAL OPERATIONAL RULES:
             }), { headers: corsHeaders });
           }
 
-          // 3. TOOL: nanopro_global_ai_list (4,750+ Models Catalog)
+          // 3. TOOL: nanopro_global_ai_list (4,804+ Models Catalog)
           if (toolName === "nanopro_global_ai_list") {
             const liveModels = await getEdgeWorldModels(false);
             const catalog = {
               status: "success",
               total_labs: 32,
-              total_models: liveModels ? (liveModels.length + 995 + 177 + 110 + 99 + 83 + 56 + 1311 + 750 + 303 + 107 + 6 + 9) : 4750,
+              total_models: liveModels ? (liveModels.length + 1311 + 750 + 995 + 303 + 177 + 150 + 110 + 107 + 99 + 83 + 56 + 44 + 11 + 10 + 9 + 6 + 5) : 4804,
               render_load: "0 MB",
-              providers: ["Ola Krutrim", "Poe by Quora", "Parasail", "Arcee AI", "Eden AI", "Requesty", "NVIDIA NIM", "SambaNova", "Cloudflare Workers AI", "Novita", "DeepInfra", "Mistral", "DeepSeek", "Groq", "Hugging Face", "OpenRouter"]
+              providers: ["Defapi Hub", "TypeSafe AI JEV", "Ola Krutrim", "Poe by Quora", "Parasail", "Arcee AI", "Eden AI", "Requesty", "NVIDIA NIM", "SambaNova", "Cloudflare Workers AI", "Novita", "DeepInfra", "Mistral", "DeepSeek", "Groq", "Hugging Face", "OpenRouter"]
             };
             return new Response(JSON.stringify({
               jsonrpc: "2.0",
@@ -6896,7 +7029,7 @@ CRITICAL OPERATIONAL RULES:
               mode: "EDGE_MULTI_MODEL_MESH",
               p95_latency_ms: 388,
               render_load: "0 MB",
-              active_providers: 23,
+              active_providers: 25,
               shield_status: "Safe (Zero Failure)"
             };
             return new Response(JSON.stringify({
@@ -6918,7 +7051,7 @@ CRITICAL OPERATIONAL RULES:
               render_memory_protect: "Active (0 MB AI Overhead)",
               render_load: "0 MB",
               total_agents: 320,
-              total_models: 4750
+              total_models: 4804
             };
             return new Response(JSON.stringify({
               jsonrpc: "2.0",

@@ -1,3 +1,6 @@
+import os
+os.chdir(r"C:\Users\mange\OneDrive\Documents\GitHub\nanopro-ai-studio")
+
 with open('app/ui/global_ai_lab_view.py', 'r', encoding='utf-8') as f:
     code = f.read()
 

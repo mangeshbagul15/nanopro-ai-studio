@@ -9,6 +9,42 @@ import time
 
 # Master Registry of All 32+ Global AI Creators & Labs
 GLOBAL_AI_CREATORS: Dict[str, Dict[str, Any]] = {
+    "defapi": {
+        "id": "defapi",
+        "name": "Defapi Frontier Hub",
+        "country": "USA",
+        "flag": "🌐",
+        "category": "Frontier Multimodal Aggregator",
+        "description": "Unified frontier access for Gemini 4 Neon, GPT-6 Astra, Claude Fable 5.2, Sora 2 Pro, and Veo 3.1.",
+        "website": "https://defapi.org",
+        "status": "OPERATIONAL",
+        "models": [
+            {"id": "defapi/google/gemini-4-neon", "name": "Gemini 4 Neon", "tier": "Frontier", "context": "2M", "elo": 1425, "latency_ms": 1100, "type": "Multimodal Frontier"},
+            {"id": "defapi/google/gemini-4-hydrogen", "name": "Gemini 4 Hydrogen", "tier": "Frontier", "context": "2M", "elo": 1415, "latency_ms": 1050, "type": "Multimodal Frontier"},
+            {"id": "defapi/google/gemini-3.7-flash", "name": "Gemini 3.7 Flash", "tier": "High", "context": "1M", "elo": 1360, "latency_ms": 280, "type": "Ultra Fast Flash"},
+            {"id": "defapi/anthropic/claude-fable-5-2", "name": "Claude Fable 5.2", "tier": "Frontier", "context": "500k", "elo": 1430, "latency_ms": 2200, "type": "Deep Reasoning"},
+            {"id": "defapi/anthropic/claude-opus-5.5", "name": "Claude Opus 5.5", "tier": "Frontier", "context": "200k", "elo": 1410, "latency_ms": 1900, "type": "Cognitive SOTA"},
+            {"id": "defapi/openai/gpt-6-astra", "name": "GPT-6 Astra", "tier": "Frontier", "context": "1M", "elo": 1420, "latency_ms": 1300, "type": "Frontier Reasoning"},
+            {"id": "defapi/openai/gpt-5.6-luna", "name": "GPT-5.6 Luna", "tier": "High", "context": "512k", "elo": 1375, "latency_ms": 850, "type": "Production Frontier"},
+            {"id": "defapi/openai/sora-2-pro", "name": "Sora 2 Pro", "tier": "Media", "context": "128k", "elo": 1390, "latency_ms": 3500, "type": "Video Synthesis"}
+        ]
+    },
+    "typesafe": {
+        "id": "typesafe",
+        "name": "TypeSafe AI (JEV)",
+        "country": "USA",
+        "flag": "⚡",
+        "category": "System One Calibrated Reasoning",
+        "description": "Creators of the JEV sub-50ms calibrated decision and fast reasoning models.",
+        "website": "https://jevtypesafeai.com",
+        "status": "OPERATIONAL",
+        "models": [
+            {"id": "jev/jev-latest", "name": "JEV Latest", "tier": "Frontier", "context": "128k", "elo": 1380, "latency_ms": 45, "type": "System One Decision"},
+            {"id": "jev/jev-decision-fast", "name": "JEV Decision Fast", "tier": "High", "context": "64k", "elo": 1350, "latency_ms": 30, "type": "Ultra Low Latency"},
+            {"id": "jev/jev-decision-deep", "name": "JEV Decision Deep Logic", "tier": "Frontier", "context": "128k", "elo": 1395, "latency_ms": 120, "type": "Calibrated Logic"},
+            {"id": "jev/typesafe/jev-1.13", "name": "TypeSafe JEV 1.13", "tier": "High", "context": "64k", "elo": 1365, "latency_ms": 50, "type": "Production Decision"}
+        ]
+    },
     # =========================================================================
     # 1. UNITED STATES (USA - 12 Frontier Labs)
     # =========================================================================
@@ -699,6 +735,9 @@ def resolve_model_provenance(model_id: str) -> Dict[str, Any]:
     clean_name = raw_name.replace(":free", " (Free)").replace("-", " ").title()
 
     lab_map = {
+        "defapi": ("Defapi Frontier Hub", "United States", "🌐", "Frontier Multimodal SOTA"),
+        "jev": ("TypeSafe AI (JEV)", "United States", "⚡", "System One Fast Reasoning"),
+        "typesafe": ("TypeSafe AI (JEV)", "United States", "⚡", "System One Fast Reasoning"),
         "anthropic": ("Anthropic", "United States", "🇺🇸", "Frontier Cognitive & Code"),
         "openai": ("OpenAI", "United States", "🇺🇸", "Frontier Commercial & Reasoning"),
         "google": ("Google DeepMind", "United States", "🇺🇸", "Frontier Multimodal 2M"),
