@@ -33,7 +33,7 @@ OVERVIEW_TTL_S = 15.0
 
 DAGS: List[Dict[str, Any]] = [
     {"id": "bq_to_s3", "name": "BigQuery -> S3 Bronze", "stage": "SOURCE",
-     "schedule": "Every 60 min + BOD 06:00 / SOD 08:00 / T1 10:00 / EOD 18:00 IST",
+     "schedule": "Every 60 min + BOD 06:00 / SOD 08:00 / T1 11:00 / EOD 18:00 IST",
      "description": "Exports nanopro_cbs_bronze tables to s3://.../bronze/bigquery/ as Parquet with manifest."},
     {"id": "sftp_to_s3", "name": "SFTP Landing -> S3 Bronze", "stage": "SOURCE",
      "schedule": "Every 60 min and immediately after upload",

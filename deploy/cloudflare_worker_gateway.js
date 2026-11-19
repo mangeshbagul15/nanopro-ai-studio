@@ -1643,7 +1643,7 @@ function edgeStandbyOrchestratorOverview() {
       "name": "BigQuery -> S3 Bronze",
       "stage": "SOURCE",
       "engine": "bigquery",
-      "schedule": "Every 60 min + BOD 06:00 / SOD 08:00 / T1 10:00 / EOD 18:00 IST",
+      "schedule": "Every 60 min + BOD 06:00 / SOD 08:00 / T1 11:00 / EOD 18:00 IST",
       "description": "Exports nanopro_cbs_bronze tables to s3://.../bronze/bigquery/ as Parquet with manifest.",
       "status": "SUCCESS",
       "rows": 900,
@@ -1866,7 +1866,7 @@ function edgeStandbyOrchestratorOverview() {
       cycles: [
         { cycle: "BOD", scheduled_ist: "06:00", state: "SUCCESS" },
         { cycle: "SOD", scheduled_ist: "08:00", state: "SUCCESS" },
-        { cycle: "T1", scheduled_ist: "10:00", state: "SUCCESS" },
+        { cycle: "T1", scheduled_ist: "11:00", state: "SUCCESS" },
         { cycle: "EOD", scheduled_ist: "18:00", state: "SUCCESS" }
       ]
     },
@@ -3470,7 +3470,7 @@ const BANKING_EXCEL_STORE = {"NANOPRO_BANKING_REPORTS_EOD_20261119_200425.xlsx":
 
     // DYNAMIC TABLE CREATION & FILE INGESTION API (Excel / CSV / Text Upload)
     // DAILY 10:00 AM BANKING EXECUTIVE DASHBOARD CRON & DISPATCH
-    if (path === "/api/cron/daily_10am_dashboard" || path === "/api/banking/trigger_10am_dashboard_email" || path === "/api/cron/10am") {
+    if (path === "/api/cron/daily_10am_dashboard" || path === "/api/banking/trigger_10am_dashboard_email" || path === "/api/cron/10am" || path === "/api/cron/11am" || path === "/api/cron/daily_11am_dashboard") {
       const activeUser = resolveRequestUser(request, url);
       const emailTarget = "mangeshbagul15@gmail.com";
       const secondaryTarget = "nanoproaistudio@gmail.com";
@@ -3495,7 +3495,7 @@ const BANKING_EXCEL_STORE = {"NANOPRO_BANKING_REPORTS_EOD_20261119_200425.xlsx":
 <body>
   <div class="card">
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span class="badge">⏱️ DAILY 10:00 AM IST DISPATCH</span>
+      <span class="badge">⏱️ DAILY 11:00 AM IST DISPATCH</span>
       <span style="font-size:11px; color:#8B949E;">${new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' })}</span>
     </div>
     <h1>🏦 NanoPro Enterprise Banking — 8 Projects Executive Briefing</h1>
@@ -3601,7 +3601,7 @@ const BANKING_EXCEL_STORE = {"NANOPRO_BANKING_REPORTS_EOD_20261119_200425.xlsx":
       let emailResult = { ok: false };
       try {
         emailResult = await sendEmailGmail(
-          "🏦 NanoPro Daily 10:00 AM Banking Executive Dashboard — 8 Projects Briefing",
+          "🏦 NanoPro Daily 11:00 AM Banking Executive Dashboard — 8 Projects Briefing",
           plainTextSummary,
           "NanoPro_Daily_10AM_Executive_Dashboard.csv",
           "PROJECT_ID,PROJECT_NAME,VOLUME,PRIMARY_METRIC,STATUS\nAML,AML Sentinel,148000,0 CTR Violations,CLEAN\nALM,ALM Treasury,48250 Cr,LCR 142.8%,COMPLIANT\nCC,Credit Card Core,48200,3 Blocked Frauds,PROTECTED\nCIBIL,Credit Bureau Mart,82400,Mean CIBIL 748,SYNCED\nADF,ADF CIMS (RBI),16.4% CRAR,Return Filed,SUBMITTED\nUPI,UPI Switch Mart,1840000,99.98% Settlement,HIGH_SPEED\nJLG,JLG Microfinance,2400 Centers,98.7% Collection,RECONCILED\nLOS,LOS & LMS Core,340 Disbursals,TAT 4.2h,DISBURSED",
@@ -3618,7 +3618,7 @@ const BANKING_EXCEL_STORE = {"NANOPRO_BANKING_REPORTS_EOD_20261119_200425.xlsx":
         dispatched: true,
         email_sent: emailResult.ok,
         target_recipients: [emailTarget, secondaryTarget],
-        schedule: "10:00 AM IST Daily",
+        schedule: "11:00 AM IST Daily",
         timestamp: nowIso,
         projects_reported: 8,
         storage_engine: "Google BigQuery + DuckDB + Snowflake Lakehouse"

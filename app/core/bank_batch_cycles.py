@@ -31,7 +31,7 @@ CYCLES: Dict[str, Dict[str, Any]] = {
             "purpose": "Full load validation and opening balances"},
     "SOD": {"label": "Start of Day", "at": (8, 0),
             "purpose": "Open the business day and refresh limits"},
-    "T1": {"label": "T-1 Delta", "at": (10, 0),
+    "T1": {"label": "T-1 Delta & Regulatory Package", "at": (11, 0),
            "purpose": "Daily delta reconciliation against T-1"},
     "EOD": {"label": "End of Day", "at": (18, 0),
             "purpose": "Close the day: marts, reconciliation and summary"},
