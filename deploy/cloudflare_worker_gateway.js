@@ -4314,6 +4314,43 @@ CRITICAL OPERATIONAL RULES:
     // Exposes 4,750+ Models across 23 Sovereign Providers & Lakehouse Tools via JSON-RPC 2.0
     // Render RAM Overhead: Strictly 0 MB · Render CPU: 0% · Zero Suspension Risk
     // =========================================================================
+
+    // BANKING AIRFLOW ORCHESTRATOR + SFTP HUB — Pipeline Control Plane
+    // The Global AI Lab's Airflow Orchestrator modal talks to
+    // /api/banking/orchestrator/* on the Render backend. Proxy these straight
+    // through so real status codes and error detail reach the dashboard instead
+    // of being swallowed by the generic 5xx FAILOVER cascade below.
+    // =========================================================================
+    if (path === "/api/banking/orchestrator" || path.startsWith("/api/banking/orchestrator/")) {
+      try {
+        const targetUrl = new URL(path + url.search, renderUrl);
+        const newHeaders = new Headers(request.headers);
+        newHeaders.delete("host");
+        newHeaders.set("Host", targetUrl.host);
+        newHeaders.set("X-Forwarded-Host", url.host);
+        newHeaders.set("X-NanoPro-Gateway", "Cloudflare-Orchestrator-Render-Direct");
+        const response = await fetch(targetUrl.toString(), {
+          method: request.method,
+          headers: newHeaders,
+          body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
+          redirect: "follow"
+        });
+        const fh = new Headers(response.headers);
+        fh.set("X-NanoPro-Routed-Node", renderUrl);
+        fh.set("X-NanoPro-Mode", "RENDER_ORCHESTRATOR_DIRECT");
+        fh.set("Access-Control-Allow-Origin", "*");
+        fh.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        fh.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Session-Token");
+        return new Response(response.body, { status: response.status, statusText: response.statusText, headers: fh });
+      } catch (err) {
+        return new Response(JSON.stringify({
+          status: "error",
+          error: "Orchestrator backend is starting up. Please retry in a few seconds.",
+          details: err.message
+        }), { status: 503, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+      }
+    }
+
     const isMcpEndpoint = path === "/mcp" ||
                           path === "/api/mcp" ||
                           path === "/mcp/manifest" ||
