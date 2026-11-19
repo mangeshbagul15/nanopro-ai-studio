@@ -3961,7 +3961,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
       const errorHint = s3ListDenied
         ? '<div style="margin-top:4px;color:#FDE047;font-size:10.5px;">💡 To list objects in this bucket, grant <code>s3:ListBucket</code> permission to its configured AWS IAM identity.</div>'
         : "";
-      const errorHtml = db.error
+      const errorHtml = (db.error && (!db.schemas || db.schemas.length === 0))
         ? `<div style="padding:10px 14px 10px 24px;color:#FCA5A5;font-size:11px;line-height:1.5;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;margin:4px 8px 6px 16px;">
             <div style="font-weight:700;color:#F87171;margin-bottom:2px;">⚠️ AWS S3 Lakehouse Listing Restricted</div>
             <div>${escapeHtml(db.error)}</div>

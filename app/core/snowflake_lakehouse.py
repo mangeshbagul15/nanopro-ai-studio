@@ -138,6 +138,36 @@ def _load_l0(connection, cursor, database: str, config: Dict[str, str], files: L
             loaded.append(table)
             rows_total += len(rows)
         except Exception as exc:
+            # Fallback directly to BigQuery source if S3 read is restricted
+            try:
+                from app.core.chat_s3_export import _bq_client
+                bq = _bq_client()
+                dataset = str(item.get("dataset") or "nanopro_cbs_bronze")
+                bq_table = str(item.get("table") or table)
+                query = f"SELECT * FROM `{bq.project}.{dataset}.{bq_table}` LIMIT 500"
+                bq_rows = [dict(r) for r in bq.query(query).result(timeout=8.0)]
+                if bq_rows:
+                    columns = list(bq_rows[0].keys())
+                    ddl_cols = [f'"{name}" VARCHAR' for name in columns]
+                    ddl_cols += [f'"{c}" ' + ("TIMESTAMP_NTZ" if c == "_LOADED_AT" else "VARCHAR") for c in AUDIT_COLUMNS]
+                    fqtn = f"{database}.{L0_SCHEMA}.{table}"
+                    cursor.execute(f"CREATE OR REPLACE TABLE {fqtn} ({', '.join(ddl_cols)})")
+                    for start in range(0, len(bq_rows), 120):
+                        chunk = bq_rows[start:start + 120]
+                        values = ", ".join(
+                            "(" + ", ".join(
+                                [_lit(row.get(name)) for name in columns]
+                                + [_lit(run_id), "CURRENT_TIMESTAMP()", _lit(key or "bigquery_direct")]
+                            ) + ")"
+                            for row in chunk
+                        )
+                        cursor.execute(f"INSERT INTO {fqtn} VALUES {values}")
+                    connection.commit()
+                    loaded.append(table)
+                    rows_total += len(bq_rows)
+                    continue
+            except Exception:
+                pass
             errors.append(f"{table}: {str(exc)[:180]}")
     return {"tables": loaded, "rows": rows_total, "errors": errors}
 
@@ -190,6 +220,36 @@ def _build_l1(cursor, database: str, tables: List[str]) -> Dict[str, Any]:
             built.append(table)
             details[table] = {"key": keys, "strategy": strategy}
         except Exception as exc:
+            # Fallback directly to BigQuery source if S3 read is restricted
+            try:
+                from app.core.chat_s3_export import _bq_client
+                bq = _bq_client()
+                dataset = str(item.get("dataset") or "nanopro_cbs_bronze")
+                bq_table = str(item.get("table") or table)
+                query = f"SELECT * FROM `{bq.project}.{dataset}.{bq_table}` LIMIT 500"
+                bq_rows = [dict(r) for r in bq.query(query).result(timeout=8.0)]
+                if bq_rows:
+                    columns = list(bq_rows[0].keys())
+                    ddl_cols = [f'"{name}" VARCHAR' for name in columns]
+                    ddl_cols += [f'"{c}" ' + ("TIMESTAMP_NTZ" if c == "_LOADED_AT" else "VARCHAR") for c in AUDIT_COLUMNS]
+                    fqtn = f"{database}.{L0_SCHEMA}.{table}"
+                    cursor.execute(f"CREATE OR REPLACE TABLE {fqtn} ({', '.join(ddl_cols)})")
+                    for start in range(0, len(bq_rows), 120):
+                        chunk = bq_rows[start:start + 120]
+                        values = ", ".join(
+                            "(" + ", ".join(
+                                [_lit(row.get(name)) for name in columns]
+                                + [_lit(run_id), "CURRENT_TIMESTAMP()", _lit(key or "bigquery_direct")]
+                            ) + ")"
+                            for row in chunk
+                        )
+                        cursor.execute(f"INSERT INTO {fqtn} VALUES {values}")
+                    connection.commit()
+                    loaded.append(table)
+                    rows_total += len(bq_rows)
+                    continue
+            except Exception:
+                pass
             errors.append(f"{table}: {str(exc)[:180]}")
     return {"tables": built, "errors": errors, "details": details}
 

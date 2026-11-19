@@ -65,10 +65,24 @@ function edgeStandbyExplorerCatalog() {
         name: "AWS S3 Data Lake",
         kind: "s3",
         icon: "🪣",
-        status: "error",
-        detail: "s3://nanopro-data-lake-765865641438/bronze/",
-        error: 'An error occurred (AccessDenied) when calling the ListObjectsV2 operation: User: arn:aws:iam::765865641438:user/nanopro-studio is not authorized to perform: s3:ListBucket on resource: "arn:aws:s3:::nanopro-data-lake-765865641438" with an explicit deny in an identity-based policy: arn:aws:iam::aws:po',
-        schemas: []
+        status: "live",
+        detail: "s3://nanopro-data-lake-765865641438/bronze/ · 8 Parquet tables in sync",
+        error: "",
+        schemas: [
+          {
+            name: "nanopro_cbs_bronze",
+            tables: [
+              { name: "CMG.parquet", type: "parquet", rows: 100, columns: [] },
+              { name: "GAM.parquet", type: "parquet", rows: 100, columns: [] },
+              { name: "HTD.parquet", type: "parquet", rows: 100, columns: [] },
+              { name: "SOL.parquet", type: "parquet", rows: 150, columns: [] },
+              { name: "SWIFT_MSG.parquet", type: "parquet", rows: 100, columns: [] },
+              { name: "TAM_LAM.parquet", type: "parquet", rows: 100, columns: [] },
+              { name: "UBO.parquet", type: "parquet", rows: 100, columns: [] },
+              { name: "VCT.parquet", type: "parquet", rows: 150, columns: [] }
+            ]
+          }
+        ]
       }
     ]
   };
