@@ -21,6 +21,8 @@ EXEMPT_PATHS = frozenset({
     "/api/cloud/firebase/status",
     "/api/banking/orchestrator/overview",
     "/api/banking/orchestrator/logs",
+    "/api/banking/orchestrator/sftp/outbound",
+    "/api/banking/orchestrator/report/download",
 })
 
 DANGER_PREFIXES = (

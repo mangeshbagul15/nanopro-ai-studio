@@ -6287,7 +6287,8 @@ CRITICAL OPERATIONAL RULES:
           body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
           redirect: "follow"
         });
-        if (response.ok || (response.status !== 502 && response.status !== 503 && response.status !== 504 && response.status !== 404)) {
+        const isAuthProtected = response.status === 401 && (path.endsWith("/sftp/outbound") || path.includes("/report/download"));
+        if ((response.ok || (response.status !== 502 && response.status !== 503 && response.status !== 504 && response.status !== 404)) && !isAuthProtected) {
           const fh = new Headers(response.headers);
           fh.set("X-NanoPro-Routed-Node", renderUrl);
           fh.set("X-NanoPro-Mode", "RENDER_ORCHESTRATOR_DIRECT");
@@ -6305,6 +6306,28 @@ CRITICAL OPERATIONAL RULES:
           return new Response(JSON.stringify(overviewData.sftp_outbound), {
             status: 200,
             headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "X-NanoPro-Mode": "EDGE_STANDBY_SFTP_OUTBOUND" }
+          });
+        }
+        if (path.includes("/report/download")) {
+          const dlFile = url.searchParams.get("filename") || "NANOPRO_BANKING_REPORTS_EOD_20261119_200425.xlsx";
+          if (dlFile.endsWith(".csv") && typeof BANKING_CSV_STORE !== "undefined" && BANKING_CSV_STORE[dlFile]) {
+            return new Response(BANKING_CSV_STORE[dlFile], {
+              status: 200,
+              headers: {
+                "Content-Type": "text/csv; charset=utf-8",
+                "Content-Disposition": `attachment; filename="${dlFile}"`,
+                "Access-Control-Allow-Origin": "*"
+              }
+            });
+          }
+          const bytes = getExcelBytesForReport(dlFile);
+          return new Response(bytes, {
+            status: 200,
+            headers: {
+              "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              "Content-Disposition": `attachment; filename="${dlFile}"`,
+              "Access-Control-Allow-Origin": "*"
+            }
           });
         }
         const fh = new Headers(response.headers);
