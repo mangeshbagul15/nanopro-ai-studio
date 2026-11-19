@@ -301,9 +301,10 @@ def overview(force: bool = False) -> Dict[str, Any]:
     last_errors: Dict[str, Dict[str, Any]] = {}
     incidents: List[Dict[str, Any]] = []
     for run in runs:
-        dag_key = str(run.get("dag") or "")
+        # _record_run stores the action in "dag" and the DAG id in "target".
+        dag_key = str(run.get("target") or "") if run.get("dag") == "run" else ""
         status = str(run.get("status") or "").upper()
-        if run.get("target") == "run" and status in FAIL_STATES:
+        if dag_key and status in FAIL_STATES:
             incidents.append({"at": run.get("at"), "kind": "DAG_FAILURE", "dag": dag_key,
                               "level": "ERROR", "message": f"{status}: {run.get('message')}"})
             if dag_key and dag_key not in last_errors:

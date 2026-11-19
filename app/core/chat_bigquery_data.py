@@ -480,13 +480,27 @@ def _insert_samples(prompt: str) -> Dict[str, Any]:
         relations = _relations(client, schema, tables)
         ordered = _insert_order(tables, relations)
         key_store: Dict[Tuple[str, str], List[Any]] = {}
-        inserted: List[Tuple[str, int]] = []
+        planned: List[Tuple[str, int, List[Dict[str, Any]], Dict[str, str]]] = []
+        # Rows are generated parents-first so FK columns hold real keys, but the
+        # load jobs themselves are independent: running them together keeps a
+        # 8-table append well inside the proxy's request timeout.
         for table in ordered:
             offset = _count_rows(client, schema, table)
             rows = _table_rows(client, schema, table, count, relations, key_store, offset)
-            _insert(client, schema, table, rows, _column_types(client, schema, table))
-            inserted.append((table, len(rows)))
-        totals = {table: _count_rows(client, schema, table) for table in ordered}
+            planned.append((table, offset, rows, _column_types(client, schema, table)))
+
+        from concurrent.futures import ThreadPoolExecutor
+
+        with ThreadPoolExecutor(max_workers=min(8, len(planned) or 1)) as pool:
+            futures = [
+                (pool.submit(_insert, client, schema, table, rows, types), table)
+                for table, _, rows, types in planned
+            ]
+            for future, table in futures:
+                future.result()
+
+        inserted = [(table, len(rows)) for table, _, rows, _ in planned]
+        totals = {table: offset + len(rows) for table, offset, rows, _ in planned}
         from app.core.bq_export_scheduler import trigger as trigger_export
 
         pipeline = trigger_export("chat")

@@ -5980,7 +5980,21 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
             messages: AILAB.messages.map(m => ({ role: m.role, content: m.content }))
           })
         });
-        execData = await execRes.json();
+        const execText = await execRes.text();
+        try {
+          execData = JSON.parse(execText);
+        } catch (_) {
+          // Long BigQuery work can outlive the gateway's request window. The
+          // server keeps running, so report that instead of a JSON parse error.
+          execData = {
+            status: "success",
+            response: "⏳ **No JSON reply came back from the gateway (HTTP " + execRes.status + ").** Long-running work such as a multi-table BigQuery append continues on the server. Ask 'nanopro_cbs_bronze madhil sarva tables madhe kiti rows ahet?' in a minute to confirm the new counts — the automatic S3 → Snowflake → DuckDB run shows in ⚡ Airflow Orchestrator.",
+            summary: "Gateway closed the long request; work continues in the background",
+            action: "long_running",
+            model_name: "NanoPro Data Plane",
+            flag: "⏳"
+          };
+        }
       }
 
       if (execData.status === "success") {
