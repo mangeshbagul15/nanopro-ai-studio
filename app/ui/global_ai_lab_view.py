@@ -3863,22 +3863,40 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     if (btn) btn.classList.toggle("is-active", !isHidden);
   };
 
+  // The live catalog is a heavy cold-start introspection (live BigQuery /
+  // Snowflake / S3 / DuckDB) that can take tens of seconds on the first hit.
+  // While the backend warms up, the edge proxy can briefly answer 503, so we
+  // retry with backoff instead of giving up on the first failure.
   window.ailabLoadExplorer = async function(forceRefresh = false) {
     const tree = $id("ailabExplorerTree");
     if (!tree) return;
-    try {
-      const res = await fetch("/api/ai/explorer/catalog");
-      if (res.ok) {
-        const data = await res.json();
-        AILAB_EXPLORER.catalog = data.databases || [];
-        ailabRenderExplorerTree();
-        return;
+    const delays = [0, 2000, 4000, 8000, 12000, 16000];
+    for (let attempt = 0; attempt < delays.length; attempt++) {
+      if (delays[attempt] > 0) {
+        tree.innerHTML = '<div style="padding:15px;text-align:center;color:#64748B;font-size:12px;">Loading databases…</div>';
+        await new Promise(resolve => setTimeout(resolve, delays[attempt]));
       }
-    } catch (_) {}
+      try {
+        const res = await fetch("/api/ai/explorer/catalog", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          const dbs = data.databases || [];
+          if (dbs.length > 0) {
+            AILAB_EXPLORER.catalog = dbs;
+            ailabRenderExplorerTree();
+            return;
+          }
+        }
+      } catch (_) {}
+    }
     // No static fallback: an empty catalog is the honest answer when the API is down.
-    AILAB_EXPLORER.catalog = [];
-
-    ailabRenderExplorerTree();
+    if (!(AILAB_EXPLORER.catalog && AILAB_EXPLORER.catalog.length)) {
+      AILAB_EXPLORER.catalog = [];
+      tree.innerHTML = '<div style="padding:15px;text-align:center;color:#64748B;font-size:12px;">No databases loaded. '
+        + '<a href="#" onclick="ailabLoadExplorer(true);return false;" style="color:#8B5CF6;">Retry</a></div>';
+    } else {
+      ailabRenderExplorerTree();
+    }
   };
 
   window.ailabRenderExplorerTree = function() {
