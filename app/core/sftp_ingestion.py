@@ -363,6 +363,9 @@ def ingest(key: str, force: bool = False) -> Dict[str, Any]:
         log_event(f"[SFTP] {entry['status']} {filename} → {entry.get('table')} "
                   f"({entry.get('rows')} rows)", component="SFTPIngest",
                   level="INFO" if entry["status"] == "success" else "WARNING")
+        if entry["status"] == "success":
+            threading.Thread(target=_publish_aws, args=(key, dict(entry)), daemon=True,
+                             name="sftp-aws-publish").start()
         return entry
 
 
@@ -387,6 +390,95 @@ def _publish_downstream(result: Dict[str, Any]) -> None:
         orch._OVERVIEW_CACHE["at"] = 0.0
     except Exception:
         pass
+
+
+def _cloudwatch_sftp(config: Dict[str, str], entry: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        from app.core.bigquery_aws_pipeline import _aws_client, _err
+
+        _aws_client(config, "cloudwatch").put_metric_data(
+            Namespace="NanoPro/SFTP",
+            MetricData=[
+                {"MetricName": "FilesIngested", "Unit": "Count", "Value": 1},
+                {"MetricName": "RowsIngested", "Unit": "Count", "Value": int(entry.get("rows") or 0)},
+                {"MetricName": "BytesIngested", "Unit": "Bytes", "Value": int(entry.get("bytes") or 0)},
+            ],
+        )
+        return {"status": "published", "namespace": "NanoPro/SFTP", "metrics": 3}
+    except Exception as exc:
+        return {"status": "unavailable", "namespace": "NanoPro/SFTP", "error": _err(exc)}
+
+
+def _sns_sftp(config: Dict[str, str], run: Dict[str, Any]) -> Dict[str, Any]:
+    try:
+        from app.core.bigquery_aws_pipeline import SNS_TOPIC_NAME, _aws_client, _err
+
+        sns = _aws_client(config, "sns")
+        arn = sns.create_topic(Name=SNS_TOPIC_NAME)["TopicArn"]
+        sns.publish(TopicArn=arn, Subject="NanoPro SFTP ingest",
+                    Message=str(run.get("summary") or "")[:2500])
+        return {"status": "published", "topic": SNS_TOPIC_NAME}
+    except Exception as exc:
+        return {"status": "unavailable", "topic": "nanopro-pipeline-notifications", "error": _err(exc)}
+
+
+def _publish_aws(key: str, entry: Dict[str, Any]) -> None:
+    """Announce one ingested partner file to the free-tier AWS side-channels."""
+    table = str(entry.get("table") or "")
+    partner = str(entry.get("partner") or "")
+    bronze_key = str(entry.get("bronze_key") or "")
+    if not table or not bronze_key:
+        return
+    rows = int(entry.get("rows") or 0)
+    size = int(entry.get("bytes") or 0)
+    try:
+        config = _config()
+    except Exception as exc:
+        log_event(f"[SFTP] AWS side-channels skipped for {table}: {exc}",
+                  level="WARNING", component="SFTPIngest")
+        return
+
+    run_id = "SFTP-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    run = {"run_id": run_id, "started_at": entry.get("ingested_at") or "",
+           "status": "success", "tables": [{"table": table}], "rows": rows,
+           "bytes": size, "duration_ms": 0,
+           "summary": f"SFTP {partner}: {table} {rows} rows -> s3://{config['bucket']}/{bronze_key}"}
+    event = {"event": "sftp_to_bronze", "run_id": run_id, "table": table, "dataset": partner,
+             "rows": rows, "bytes": size, "key": bronze_key, "at": run["started_at"]}
+    out: Dict[str, Any] = {}
+    try:
+        from app.core.bigquery_aws_pipeline import _dynamodb_record, _sqs_send
+
+        out["sqs"] = _sqs_send(config, event)
+        out["dynamodb"] = _dynamodb_record(config, run)
+    except Exception as exc:
+        out["sqs"] = out["dynamodb"] = {"status": "unavailable", "error": str(exc)[:200]}
+    out["cloudwatch"] = _cloudwatch_sftp(config, entry)
+    out["sns"] = _sns_sftp(config, run)
+    try:
+        from app.core.iceberg_lake import publish as publish_iceberg
+
+        out["iceberg"] = publish_iceberg(config, [{"key": bronze_key, "dataset": "sftp",
+                                                  "table": table, "rows": rows, "bytes": size}])
+    except Exception as exc:
+        out["iceberg"] = {"status": "unavailable", "error": str(exc)[:200]}
+
+    statuses = {name: str(item.get("status") or "") for name, item in out.items()}
+    try:
+        with _LOCK:
+            state = _read_state(force=True)
+            saved = state["files"].get(key)
+            if saved:
+                saved["aws_services"] = statuses
+                _write_state(state)
+    except Exception as exc:
+        log_event(f"[SFTP] AWS side-channel state write failed for {table}: {exc}",
+                  level="WARNING", component="SFTPIngest")
+    _BRONZE_CACHE["at"] = 0.0
+    healthy = all(status in ("sent", "recorded", "published", "registered", "updated", "skipped")
+                  for status in statuses.values())
+    log_event(f"[SFTP] AWS side-channels for {table}: {statuses}",
+              level="INFO" if healthy else "WARNING", component="SFTPIngest")
 
 
 def refresh_downstream(run_id: str = "") -> Dict[str, Any]:
@@ -575,6 +667,7 @@ def status() -> Dict[str, Any]:
             "rows": entry.get("rows") or 0,
             "columns": entry.get("columns") or 0,
             "glue": entry.get("glue") or "",
+            "aws_services": entry.get("aws_services") or {},
             "error": entry.get("error") or "",
             "ingested_at": entry.get("ingested_at") or "",
             "sha256": entry.get("sha256") or "",

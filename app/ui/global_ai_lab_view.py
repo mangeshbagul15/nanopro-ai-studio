@@ -8657,11 +8657,23 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     const filesBox = document.getElementById("airflowSftpFilesList");
     if (filesBox) {
       const files = sftp.files || [];
+      const awsKeys = ["sqs", "dynamodb", "cloudwatch", "sns", "iceberg"];
+      const awsLine = (item) => {
+        const svc = item.aws_services || {};
+        const shown = Object.keys(svc).length ? awsKeys : [];
+        if (!shown.length) return "";
+        return `<div style="font-size:10px;color:#64748B;margin-top:2px;">AWS: ${shown.map(name => {
+          const state = String(svc[name] || "pending");
+          const ok = ["sent", "recorded", "published", "registered", "updated", "skipped"].includes(state);
+          return `<span style="color:${ok ? "#34D399" : "#F87171"};">${name} ${orchEsc(state)}</span>`;
+        }).join(" &middot; ")}</div>`;
+      };
       filesBox.innerHTML = files.length ? files.map(item => `
         <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:7px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
           <div style="min-width:0;">
             <div style="font-size:12px;font-weight:700;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${orchEsc(item.name)}</div>
             <div style="font-size:10.5px;color:#94A3B8;">partner ${orchEsc(item.partner)} &bull; ${orchEsc((item.size / 1024).toFixed(1))} KB &bull; ${item.rows ? orchNum(item.rows) + " rows" : "not ingested"}${item.table ? " &bull; table " + orchEsc(item.table) : ""}${item.error ? " &bull; " + orchEsc(item.error) : ""}</div>
+            ${awsLine(item)}
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             ${orchBadge(item.status === "new" ? "NOT_RUN" : item.status)}
