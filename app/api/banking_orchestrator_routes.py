@@ -225,6 +225,18 @@ def orchestrator_report_build(req: ReportBuildRequest):
 # -------------------------------------------------------------
 # Alerts
 # -------------------------------------------------------------
+@router.get("/orchestrator/report/download")
+def orchestrator_report_download(filename: str = Query(...)):
+    import os
+    from fastapi.responses import FileResponse
+    clean_name = os.path.basename(filename)
+    fpath = os.path.join("data", "reports", "outbound", clean_name)
+    if not os.path.exists(fpath):
+        raise HTTPException(status_code=404, detail=f"Report file {clean_name} not found in outbound repository.")
+    media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if clean_name.endswith(".xlsx") else "text/csv"
+    return FileResponse(fpath, filename=clean_name, media_type=media_type)
+
+
 @router.get("/orchestrator/alerts/config")
 def orchestrator_alert_config():
     from app.core import pipeline_alerts

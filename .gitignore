@@ -73,3 +73,6 @@ artifacts/
 # CUA browser profile (local Playwright user data)
 .cua_profile/
 .cua_profile_test/
+
+data/state/
+
