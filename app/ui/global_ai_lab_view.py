@@ -3817,7 +3817,7 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
   window.AILAB_EXPLORER = {
     isOpen: false,
     catalog: null,
-    treeOpen: { "db_duckdb": true, "db_snowflake": true, "db_bigquery": true, "db_aws": true, "sc_duckdb_gold_marts": true, "sc_snowflake_L0_STAGING": true },
+    treeOpen: {},
     activeTable: null
   };
 
@@ -3913,12 +3913,14 @@ DAG 8      Email (SMTP cascade) / Telegram bot / Meta WhatsApp Cloud API</div>
     let html = "";
     dbs.forEach(db => {
       const dbKey = "db_" + db.id;
-      const isOpen = AILAB_EXPLORER.treeOpen[dbKey] !== false;
+      // Collapsed by default — the user expands a database/schema by clicking it.
+      // While searching, auto-expand so matches stay visible.
+      const isOpen = filter ? true : (AILAB_EXPLORER.treeOpen[dbKey] === true);
 
       let schemasHtml = "";
       (db.schemas || []).forEach(sc => {
         const scKey = "sc_" + db.id + "_" + sc.name;
-        const isScOpen = AILAB_EXPLORER.treeOpen[scKey] !== false;
+        const isScOpen = filter ? true : (AILAB_EXPLORER.treeOpen[scKey] === true);
 
         let tablesHtml = "";
         (sc.tables || []).forEach(tb => {
