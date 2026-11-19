@@ -108,7 +108,9 @@ def _money(table: str, column: str, index: int) -> float:
         base = 100_000 + (index * 91_337) % 49_000_000
     elif table in ("GL_BALANCE_DAILY", "CRR_SLR_POSITION", "BORROWING_MASTER", "INVESTMENT_PORTFOLIO"):
         base = 10_000_000 + (index * 913_337) % 490_000_000
-    elif table in ("UPI_TRANSACTION", "DEBIT_CARD_TRANSACTION", "ATM_SWITCH"):
+    elif table in ("DEPOSIT_MASTER", "CREDIT_CARD_MASTER", "CREDIT_CARD_STATEMENT"):
+        base = 25_000 + (index * 7_913) % 2_000_000
+    elif table in ("UPI_TRANSACTION", "DEBIT_CARD_TRANSACTION", "CREDIT_CARD_TRANSACTION", "ATM_SWITCH"):
         base = 100 + (index * 137) % 49_900
     elif table == "UPI_SETTLEMENT":
         base = 1_000_000 + (index * 71_337) % 99_000_000
@@ -373,7 +375,27 @@ def _value(table: str, column: str, type_sql: str, index: int, today: date) -> A
     if upper == "BAND":
         return _pick(("AAA", "AA", "A", "BBB", "BB", "B", "C", "D"), index)
     if upper == "CARD_TYPE":
-        return "DEBIT"
+        return "CREDIT" if table in ("CREDIT_CARD_MASTER",) else "DEBIT"
+    if upper == "RATE_TYPE":
+        return _pick(("FIXED", "FLOATING"), index)
+    if upper == "BENCHMARK":
+        return _pick(("REPO", "MCLR", "TBILL", "CMT", "SOFR"), index)
+    if upper == "HQLA_CLASS":
+        return _pick(("LEVEL_1", "LEVEL_2A", "LEVEL_2B"), index)
+    if upper == "CUSTOMER_SEGMENT":
+        return _pick(("RETAIL", "PRIORITY", "PRIVATE", "HNI", "CORPORATE"), index)
+    if upper == "PEP_CATEGORY":
+        return _pick(("NA", "NA", "PEP", "RCA"), index)
+    if upper == "PEP_SOURCE":
+        return _pick(("INTERNAL", "WORLD_CHECK", "DOW_JONES"), index)
+    if upper == "GST_NO":
+        return f"27{chr(65 + index % 26)}ABCU{9600 + index % 400}{chr(65 + index % 26)}1Z{index % 10}"
+    if upper == "HS_CODE":
+        return f"{1000 + (index * 13) % 8999}{index % 100:02d}"
+    if upper == "DENOMINATION":
+        return _pick(("100", "200", "500", "2000"), index)
+    if upper == "SOURCE_CHANNEL":
+        return _pick(("BRANCH", "ATM", "CASH_DEPOSIT", "CURRENCY_CHEST"), index)
     if upper == "VALUE_MASKED":
         return f"98******{index % 100:02d}"
     if upper == "DOC_TYPE":
@@ -457,6 +479,25 @@ def _finalise(table: str, row: Dict[str, Any], index: int) -> Dict[str, Any]:
         ccy = str(row.get("CCY") or "INR")
         row["INR_AMOUNT"] = round(float(row.get("AMOUNT") or 0) * (83.2 if ccy != "INR" else 1.0), 2)
         row["FOREIGN_FLAG"] = ccy != "INR"
+    elif table == "CREDIT_CARD_TRANSACTION":
+        ccy = str(row.get("CCY") or "INR")
+        row["INR_AMOUNT"] = round(float(row.get("AMOUNT") or 0) * (83.2 if ccy != "INR" else 1.0), 2)
+        row["FOREIGN_FLAG"] = ccy != "INR"
+    elif table == "CREDIT_CARD_STATEMENT":
+        total = float(row.get("TOTAL_DUE") or 0)
+        row["MIN_DUE"] = round(total * 0.05, 2)
+        row["PAYMENT_RECEIVED"] = round(total * (1.0 if index % 4 else 0.3), 2)
+        row["WRITTEN_OFF_FLAG"] = index % 23 == 0
+        dpd = (index * 7) % 181
+        row["DAYS_PAST_DUE"] = dpd
+        row["BUCKET"] = ("STANDARD" if dpd == 0 else "SMA0" if dpd <= 30 else
+                         "SMA1" if dpd <= 60 else "SMA2" if dpd <= 90 else "NPA")
+    elif table == "COUNTERFEIT_INCIDENT":
+        row["RECOVERED_FLAG"] = index % 3 != 0
+        row["REPORTED_TO_POLICE"] = index % 5 == 0
+    elif table == "WALK_IN_CASH_TXN":
+        row["PAN_CAPTURED"] = index % 2 == 0
+        row["FORM60"] = index % 3 == 0
     elif table == "UPI_TRANSACTION":
         row["DISPUTE_FLAG"] = index % 20 == 0
     return row

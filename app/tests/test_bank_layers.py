@@ -32,10 +32,12 @@ class StarSpecsTest(unittest.TestCase):
     def test_conformed_dimensions_and_facts(self):
         dims = {name for name in self.names if name.startswith("DIM_")}
         facts = {name for name in self.names if name.startswith("FACT_")}
-        self.assertGreaterEqual(len(dims), 8)
-        self.assertGreaterEqual(len(facts), 10)
+        self.assertGreaterEqual(len(dims), 11)
+        self.assertGreaterEqual(len(facts), 21)
         for required in ("DIM_CUSTOMER", "DIM_ACCOUNT", "DIM_BRANCH", "DIM_DATE",
-                         "FACT_TRANSACTION", "FACT_LOAN", "FACT_UPI", "FACT_CARD", "FACT_ATM"):
+                         "DIM_CREDIT_CARD", "FACT_TRANSACTION", "FACT_LOAN", "FACT_UPI",
+                         "FACT_CARD", "FACT_ATM", "FACT_CREDIT_CARD", "FACT_CARD_STATEMENT",
+                         "FACT_COUNTERFEIT", "FACT_WALK_IN_CASH"):
             self.assertIn(required, self.names)
 
     def test_requirements_resolve(self):
@@ -89,10 +91,10 @@ class ReportSpecsTest(unittest.TestCase):
         rbi = [s for s in self.specs if s["schema"] == "RPT_RBI"]
         alm = [s for s in self.specs if s["schema"] == "RPT_ALM"]
         upi = [s for s in self.specs if s["schema"] == "RPT_UPI"]
-        self.assertGreaterEqual(len(fiu), 6)
-        self.assertGreaterEqual(len(rbi), 6)
-        self.assertGreaterEqual(len(alm), 5)
-        self.assertGreaterEqual(len(upi), 6)
+        self.assertGreaterEqual(len(fiu), 20)
+        self.assertGreaterEqual(len(rbi), 12)
+        self.assertGreaterEqual(len(alm), 10)
+        self.assertGreaterEqual(len(upi), 8)
 
 
 class LayerBuildTest(unittest.TestCase):

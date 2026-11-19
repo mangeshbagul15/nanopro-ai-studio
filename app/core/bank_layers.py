@@ -409,7 +409,8 @@ def _star_specs(database: str) -> List[Dict[str, Any]]:
                 "t.IS_WEEKEND_HOLIDAY, t.TRAN_DATE, e.DR_CR_FLAG, e.TRAN_MODE, "
                 "e.INSTRUMENT_NO, e.COUNTERPARTY_ACCT, e.COUNTERPARTY_NAME, "
                 "e.COUNTERPARTY_BANK, e.COUNTERPARTY_IFSC, e.COUNTERPARTY_COUNTRY, "
-                "e.TXN_CITY, e.PURPOSE_CODE, e.NARRATION, e.DEVICE_ID, e.IP_HASH "
+                "e.TXN_CITY, e.PURPOSE_CODE, e.NARRATION, e.DEVICE_ID, e.IP_HASH, "
+                "e.DEPOSITOR_CUST_ID, e.STRUCTURING_FLAG, e.RAPID_MOVEMENT_FLAG "
                 f"FROM {h}.HTD t LEFT JOIN {c}.HTD_EXT e ON e.TRAN_ID = t.TRAN_ID"
             ),
         },
@@ -507,6 +508,26 @@ def _star_specs(database: str) -> List[Dict[str, Any]]:
         {
             "name": "FACT_TRADE", "requires": [("c", "TRADE_DOCUMENT")],
             "sql": "SELECT * FROM " + c + ".TRADE_DOCUMENT",
+        },
+        {
+            "name": "DIM_CREDIT_CARD", "requires": [("c", "CREDIT_CARD_MASTER")],
+            "sql": "SELECT * FROM " + c + ".CREDIT_CARD_MASTER",
+        },
+        {
+            "name": "FACT_CREDIT_CARD", "requires": [("c", "CREDIT_CARD_TRANSACTION")],
+            "sql": "SELECT * FROM " + c + ".CREDIT_CARD_TRANSACTION",
+        },
+        {
+            "name": "FACT_CARD_STATEMENT", "requires": [("c", "CREDIT_CARD_STATEMENT")],
+            "sql": "SELECT * FROM " + c + ".CREDIT_CARD_STATEMENT",
+        },
+        {
+            "name": "FACT_COUNTERFEIT", "requires": [("c", "COUNTERFEIT_INCIDENT")],
+            "sql": "SELECT * FROM " + c + ".COUNTERFEIT_INCIDENT",
+        },
+        {
+            "name": "FACT_WALK_IN_CASH", "requires": [("c", "WALK_IN_CASH_TXN")],
+            "sql": "SELECT * FROM " + c + ".WALK_IN_CASH_TXN",
         },
     ]
 
@@ -776,6 +797,296 @@ def _report_specs(database: str) -> List[Dict[str, Any]]:
              "SUM(TXN_COUNT) AS TXNS, SUM(TOTAL_AMOUNT) AS TOTAL_AMOUNT, "
              "CURRENT_TIMESTAMP() AS BUILT_AT "
              f"FROM {c}.NEFT_RTGS_BATCH GROUP BY 1, 2, 3"
+         )},
+        # ---- FIU / AML extended (16) ---------------------------------------
+        {"schema": "RPT_FIU", "name": "NPO_TRANSACTION",
+         "requires": [("c", "NPO_REGISTRY"), ("star", "FACT_TRANSACTION")],
+         "sql": (
+             "SELECT n.RISK_BAND, n.DONOR_COUNTRY, n.PURPOSE, COUNT(DISTINCT n.NPO_ID) AS NPOS, "
+             "COUNT(*) AS TXNS, SUM(t.TRAN_AMT_INR) AS TOTAL_AMOUNT_INR, "
+             "SUM(IFF(t.SUSPICIOUS_RULE_HIT, 1, 0)) AS SUSPICIOUS_HITS, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.NPO_REGISTRY n "
+             f"JOIN {h}.GAM g ON g.ACID = n.ACCOUNT_ID "
+             f"JOIN {star}.FACT_TRANSACTION t ON t.FORACID = g.ACID "
+             "GROUP BY 1, 2, 3"
+         )},
+        {"schema": "RPT_FIU", "name": "STRUCTURING_SMURFING",
+         "requires": [("star", "FACT_TRANSACTION")],
+         "sql": (
+             "SELECT FORACID, COUNT(*) AS CASH_TXNS, SUM(TRAN_AMT_INR) AS TOTAL_AMOUNT, "
+             "MAX(TRAN_AMT_INR) AS MAX_TXN, MIN(TRAN_AMT_INR) AS MIN_TXN, "
+             "SUM(IFF(STRUCTURING_FLAG, 1, 0)) AS FLAGGED_TXNS, "
+             "SUM(IFF(TRAN_AMT_INR >= 900000 AND TRAN_AMT_INR < 1000000, 1, 0)) AS NEAR_THRESHOLD, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {star}.FACT_TRANSACTION WHERE CASH_TRAN_FLAG GROUP BY 1 HAVING COUNT(*) > 1"
+         )},
+        {"schema": "RPT_FIU", "name": "RAPID_MOVEMENT_FUNDS",
+         "requires": [("star", "FACT_TRANSACTION")],
+         "sql": (
+             "SELECT FORACID, COUNT(*) AS TXNS, SUM(TRAN_AMT_INR) AS TOTAL_INR, "
+             "COUNT(DISTINCT COUNTERPARTY_ACCT) AS COUNTERPARTIES, "
+             "MAX(TRAN_DATE) AS LAST_TXN_DATE, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {star}.FACT_TRANSACTION WHERE RAPID_MOVEMENT_FLAG GROUP BY 1"
+         )},
+        {"schema": "RPT_FIU", "name": "HIGH_TURNOVER_INCOME",
+         "requires": [("h", "HTD"), ("c", "HTD_EXT"), ("c", "CMG_EXT")],
+         "sql": (
+             "SELECT e.OCCUPATION_CODE, e.SOURCE_OF_FUNDS, "
+             "COUNT(DISTINCT x.ORIGINATOR_CUST_ID) AS CUSTOMERS, COUNT(*) AS TXNS, "
+             "SUM(t.TRAN_AMT_INR) AS TURNOVER, ROUND(AVG(t.TRAN_AMT_INR), 2) AS AVG_TXN, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {h}.HTD t JOIN {c}.HTD_EXT x ON x.TRAN_ID = t.TRAN_ID "
+             f"JOIN {c}.CMG_EXT e ON e.CUST_ID = x.ORIGINATOR_CUST_ID GROUP BY 1, 2"
+         )},
+        {"schema": "RPT_FIU", "name": "DORMANT_ACTIVATION",
+         "requires": [("c", "GAM_EXT"), ("star", "FACT_TRANSACTION")],
+         "sql": (
+             "SELECT COALESCE(g.ONBOARDING_CHANNEL, 'NA') AS CHANNEL, "
+             "COUNT(DISTINCT g.ACID) AS DORMANT_REACTIVATED, COUNT(*) AS TXNS, "
+             "SUM(t.TRAN_AMT_INR) AS TXN_AMOUNT, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.GAM_EXT g JOIN {star}.FACT_TRANSACTION t ON t.FORACID = g.ACID "
+             "WHERE g.DORMANT_FLAG GROUP BY 1"
+         )},
+        {"schema": "RPT_FIU", "name": "MULTIPLE_ACCOUNTS_IDENTIFIER",
+         "requires": [("c", "CMG_EXT"), ("h", "GAM")],
+         "sql": (
+             "SELECT e.PAN_MASKED, COUNT(DISTINCT g.ACID) AS ACCOUNTS, "
+             "COUNT(DISTINCT g.CUST_ID) AS CUSTOMERS, SUM(g.CLR_BAL_AMT) AS TOTAL_BALANCE, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.CMG_EXT e JOIN {h}.GAM g ON g.CUST_ID = e.CUST_ID "
+             "GROUP BY 1 HAVING COUNT(DISTINCT g.ACID) > 1"
+         )},
+        {"schema": "RPT_FIU", "name": "HIGH_VALUE_REMITTANCE",
+         "requires": [("star", "FACT_SWIFT")],
+         "sql": (
+             "SELECT DIRECTION, BENEFICIARY_COUNTRY, REMITTER_COUNTRY, COUNT(*) AS MESSAGES, "
+             "SUM(AMOUNT_INR) AS TOTAL_INR, MAX(AMOUNT_INR) AS MAX_INR, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {star}.FACT_SWIFT WHERE AMOUNT_INR >= 500000 GROUP BY 1, 2, 3"
+         )},
+        {"schema": "RPT_FIU", "name": "HIGH_RISK_COUNTRY",
+         "requires": [("star", "FACT_SWIFT"), ("c", "COUNTRY_RISK_MASTER")],
+         "sql": (
+             "SELECT r.RISK_BAND, r.FATF_STATUS, s.BENEFICIARY_COUNTRY, COUNT(*) AS MESSAGES, "
+             "SUM(s.AMOUNT_INR) AS TOTAL_INR, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {star}.FACT_SWIFT s "
+             f"LEFT JOIN {c}.COUNTRY_RISK_MASTER r ON r.COUNTRY_CODE = s.BENEFICIARY_COUNTRY "
+             "GROUP BY 1, 2, 3"
+         )},
+        {"schema": "RPT_FIU", "name": "PEP_REPORT",
+         "requires": [("c", "CMG_EXT")],
+         "sql": (
+             "SELECT COALESCE(PEP_CATEGORY, 'NA') AS PEP_CATEGORY, "
+             "COALESCE(PEP_SOURCE, 'NA') AS PEP_SOURCE, COUNT(*) AS CUSTOMERS, "
+             "SUM(IFF(RISK_SCORE >= 70, 1, 0)) AS HIGH_RISK, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.CMG_EXT WHERE PEP_CATEGORY IS NOT NULL GROUP BY 1, 2"
+         )},
+        {"schema": "RPT_FIU", "name": "NEW_ACCOUNT_HIGH_CASH",
+         "requires": [("c", "GAM_EXT"), ("star", "FACT_TRANSACTION")],
+         "sql": (
+             "SELECT COALESCE(g.ONBOARDING_CHANNEL, 'NA') AS CHANNEL, "
+             "COUNT(DISTINCT g.ACID) AS NEW_ACCOUNTS, SUM(t.TRAN_AMT_INR) AS CASH_AMOUNT, "
+             "MAX(t.TRAN_AMT_INR) AS MAX_TXN, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.GAM_EXT g JOIN {star}.FACT_TRANSACTION t ON t.FORACID = g.ACID "
+             "WHERE t.CASH_TRAN_FLAG AND g.OPENING_DATE IS NOT NULL GROUP BY 1"
+         )},
+        {"schema": "RPT_FIU", "name": "SHELL_COMPANY_ALERT",
+         "requires": [("c", "CMG_EXT")],
+         "sql": (
+             "SELECT COALESCE(ENTITY_TYPE, 'NA') AS ENTITY_TYPE, "
+             "COALESCE(IS_ACTIVE_ENTITY, FALSE) AS IS_ACTIVE, COUNT(*) AS ENTITIES, "
+             "SUM(IFF(GST_NO IS NULL, 1, 0)) AS NO_GST, "
+             "SUM(IFF(LAST_FILING_DATE IS NULL, 1, 0)) AS NO_FILING, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.CMG_EXT WHERE ENTITY_TYPE IS NOT NULL GROUP BY 1, 2"
+         )},
+        {"schema": "RPT_FIU", "name": "THIRD_PARTY_CASH_DEPOSIT",
+         "requires": [("h", "HTD"), ("c", "HTD_EXT")],
+         "sql": (
+             "SELECT x.DEPOSITOR_CUST_ID, COUNT(*) AS DEPOSITS, "
+             "SUM(t.TRAN_AMT_INR) AS TOTAL_AMOUNT, COUNT(DISTINCT t.FORACID) AS ACCOUNTS, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {h}.HTD t JOIN {c}.HTD_EXT x ON x.TRAN_ID = t.TRAN_ID "
+             "WHERE t.CASH_TRAN_FLAG AND x.DEPOSITOR_CUST_ID IS NOT NULL "
+             "AND x.DEPOSITOR_CUST_ID <> x.ORIGINATOR_CUST_ID GROUP BY 1"
+         )},
+        {"schema": "RPT_FIU", "name": "TBML_ALERT",
+         "requires": [("c", "TRADE_DOCUMENT")],
+         "sql": (
+             "SELECT COALESCE(HS_CODE, 'NA') AS HS_CODE, COUNT(*) AS DOCS, "
+             "SUM(INR_AMOUNT) AS TOTAL_INR, ROUND(AVG(UNIT_PRICE), 2) AS AVG_UNIT_PRICE, "
+             "ROUND(AVG(MARKET_PRICE), 2) AS AVG_MARKET_PRICE, "
+             "SUM(IFF(DISCREPANCY_FLAG, 1, 0)) AS DISCREPANCIES, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.TRADE_DOCUMENT GROUP BY 1"
+         )},
+        {"schema": "RPT_FIU", "name": "FATCA_CRS_NONCOMPLIANCE",
+         "requires": [("c", "CMG_EXT")],
+         "sql": (
+             "SELECT COALESCE(FATCA_STATUS, 'MISSING') AS FATCA_STATUS, "
+             "COALESCE(CRS_STATUS, 'MISSING') AS CRS_STATUS, COUNT(*) AS CUSTOMERS, "
+             "SUM(IFF(TIN IS NULL, 1, 0)) AS NO_TIN, "
+             "SUM(IFF(TAX_RESIDENCY IS NULL, 1, 0)) AS NO_TAX_RESIDENCY, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.CMG_EXT GROUP BY 1, 2"
+         )},
+        {"schema": "RPT_FIU", "name": "WALK_IN_CASH",
+         "requires": [("c", "WALK_IN_CASH_TXN")],
+         "sql": (
+             "SELECT TXN_TYPE, STATUS, COUNT(*) AS TXNS, SUM(AMOUNT) AS TOTAL_AMOUNT, "
+             "SUM(IFF(PAN_CAPTURED, 1, 0)) AS PAN_CAPTURED, SUM(IFF(FORM60, 1, 0)) AS FORM60, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.WALK_IN_CASH_TXN GROUP BY 1, 2"
+         )},
+        {"schema": "RPT_FIU", "name": "CCR_COUNTERFEIT",
+         "requires": [("star", "FACT_COUNTERFEIT")],
+         "sql": (
+             "SELECT SOL_ID, SOURCE_CHANNEL, COUNT(*) AS INCIDENTS, "
+             "SUM(FAKE_NOTE_COUNT) AS FAKE_NOTES, SUM(CI_AMOUNT) AS TOTAL_AMOUNT, "
+             "SUM(IFF(RECOVERED_FLAG, 1, 0)) AS RECOVERED, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {star}.FACT_COUNTERFEIT GROUP BY 1, 2"
+         )},
+        # ---- RBI extended (8) ----------------------------------------------
+        {"schema": "RPT_RBI", "name": "SMA_RETURN",
+         "requires": [("h", "TAM_LAM")],
+         "sql": (
+             "SELECT COALESCE(SMA_CLASSIFICATION, 'NA') AS SMA_CLASS, COUNT(*) AS ACCOUNTS, "
+             "SUM(CURRENT_OUTSTANDING_BAL) AS OUTSTANDING, ROUND(AVG(DPD_COUNT), 2) AS AVG_DPD, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {h}.TAM_LAM GROUP BY 1"
+         )},
+        {"schema": "RPT_RBI", "name": "R_RETURN_FOREX",
+         "requires": [("c", "NOSTRO_ACCOUNT")],
+         "sql": (
+             "SELECT CCY, SUM(BALANCE) AS NOSTRO_BALANCE, COUNT(*) AS ACCOUNTS, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.NOSTRO_ACCOUNT GROUP BY 1"
+         )},
+        {"schema": "RPT_RBI", "name": "FORM_A_FORTNIGHTLY",
+         "requires": [("star", "FACT_FX_POSITION")],
+         "sql": (
+             "SELECT AS_OF_DATE, COUNT(*) AS CURRENCIES, SUM(NOP_INR) AS NET_OPEN_POSITION_INR, "
+             "SUM(LIMIT_AMT) AS LIMIT_AMT, MAX(UTILISATION_PCT) AS MAX_UTIL_PCT, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {star}.FACT_FX_POSITION GROUP BY 1"
+         )},
+        {"schema": "RPT_RBI", "name": "DICGC_RETURN",
+         "requires": [("c", "DEPOSIT_MASTER")],
+         "sql": (
+             "SELECT COALESCE(INSURED_FLAG, FALSE) AS INSURED_FLAG, COUNT(*) AS DEPOSITS, "
+             "SUM(AMOUNT) AS TOTAL_AMOUNT, "
+             "SUM(IFF(INSURED_FLAG, LEAST(AMOUNT, 500000), 0)) AS INSURED_AMOUNT, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.DEPOSIT_MASTER GROUP BY 1"
+         )},
+        {"schema": "RPT_RBI", "name": "LCR_RETURN",
+         "requires": [("c", "INVESTMENT_PORTFOLIO"), ("c", "DEPOSIT_MASTER")],
+         "sql": (
+             "WITH hqla AS (SELECT SUM(MARKET_VALUE) AS AMT FROM "
+             f"{c}.INVESTMENT_PORTFOLIO WHERE HQLA_CLASS IS NOT NULL), "
+             "outflow AS (SELECT SUM(AMOUNT) AS AMT FROM "
+             f"{c}.DEPOSIT_MASTER) "
+             "SELECT h.AMT AS HQLA, o.AMT AS TOTAL_DEPOSITS, "
+             "ROUND(h.AMT / NULLIF(o.AMT, 0) * 100, 2) AS LCR_PCT, CURRENT_TIMESTAMP() AS BUILT_AT "
+             "FROM hqla h CROSS JOIN outflow o"
+         )},
+        {"schema": "RPT_RBI", "name": "NSFR_RETURN",
+         "requires": [("c", "DEPOSIT_MASTER"), ("c", "INVESTMENT_PORTFOLIO")],
+         "sql": (
+             "WITH asf AS (SELECT SUM(AMOUNT) AS AMT FROM "
+             f"{c}.DEPOSIT_MASTER), "
+             "rsf AS (SELECT SUM(MARKET_VALUE) AS AMT FROM "
+             f"{c}.INVESTMENT_PORTFOLIO) "
+             "SELECT a.AMT AS AVAILABLE_STABLE_FUNDING, r.AMT AS REQUIRED_STABLE_FUNDING, "
+             "ROUND(a.AMT / NULLIF(r.AMT, 0) * 100, 2) AS NSFR_PCT, CURRENT_TIMESTAMP() AS BUILT_AT "
+             "FROM asf a CROSS JOIN rsf r"
+         )},
+        {"schema": "RPT_RBI", "name": "EARLY_LOAN_FORECLOSURE",
+         "requires": [("c", "TAM_LAM_EXT")],
+         "sql": (
+             "SELECT COUNT(*) AS FORECLOSURES, SUM(FORECLOSURE_AMT) AS TOTAL_FORECLOSURE, "
+             "SUM(PREPAYMENT_PENALTY) AS TOTAL_PENALTY, "
+             "ROUND(AVG(PREPAYMENT_PENALTY), 2) AS AVG_PENALTY, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.TAM_LAM_EXT WHERE FORECLOSURE_DATE IS NOT NULL"
+         )},
+        {"schema": "RPT_RBI", "name": "CARD_DELINQUENCY_ROLL_RATE",
+         "requires": [("star", "FACT_CARD_STATEMENT")],
+         "sql": (
+             "SELECT COALESCE(BUCKET, 'NA') AS BUCKET, COUNT(*) AS ACCOUNTS, "
+             "SUM(TOTAL_DUE) AS TOTAL_DUE, SUM(MIN_DUE) AS MIN_DUE, "
+             "SUM(PAYMENT_RECEIVED) AS PAYMENT_RECEIVED, "
+             "ROUND(AVG(DAYS_PAST_DUE), 1) AS AVG_DPD, "
+             "SUM(IFF(WRITTEN_OFF_FLAG, 1, 0)) AS WRITTEN_OFF, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {star}.FACT_CARD_STATEMENT GROUP BY 1"
+         )},
+        # ---- ALM extended (5) ----------------------------------------------
+        {"schema": "RPT_ALM", "name": "COST_OF_FUNDS_VS_YIELD",
+         "requires": [("c", "DEPOSIT_MASTER"), ("h", "TAM_LAM")],
+         "sql": (
+             "WITH cof AS ("
+             "SELECT SUM(AMOUNT * COALESCE(EFFECTIVE_RATE, 0)) / NULLIF(SUM(AMOUNT), 0) AS COST_RATE, "
+             f"SUM(AMOUNT) AS DEP FROM {c}.DEPOSIT_MASTER), "
+             "yld AS (SELECT SUM(CURRENT_OUTSTANDING_BAL * COALESCE(INTEREST_RATE, 0)) "
+             f"/ NULLIF(SUM(CURRENT_OUTSTANDING_BAL), 0) AS YIELD_RATE, "
+             f"SUM(CURRENT_OUTSTANDING_BAL) AS ADV FROM {h}.TAM_LAM) "
+             "SELECT ROUND(cof.COST_RATE, 4) AS COST_OF_FUNDS_PCT, "
+             "ROUND(yld.YIELD_RATE, 4) AS YIELD_PCT, "
+             "ROUND(yld.YIELD_RATE - cof.COST_RATE, 4) AS SPREAD_PCT, "
+             "cof.DEP AS TOTAL_DEPOSITS, yld.ADV AS TOTAL_ADVANCES, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT FROM cof CROSS JOIN yld"
+         )},
+        {"schema": "RPT_ALM", "name": "IRS_RATE_SENSITIVITY",
+         "requires": [("c", "DEPOSIT_MASTER")],
+         "sql": (
+             "SELECT COALESCE(BENCHMARK, 'NA') AS BENCHMARK, COALESCE(RATE_TYPE, 'NA') AS RATE_TYPE, "
+             "COUNT(*) AS INSTRUMENTS, SUM(AMOUNT) AS NOTIONAL, "
+             "ROUND(AVG(SPREAD_BPS), 2) AS AVG_SPREAD_BPS, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.DEPOSIT_MASTER GROUP BY 1, 2"
+         )},
+        {"schema": "RPT_ALM", "name": "EARNINGS_AT_RISK",
+         "requires": [("c", "DEPOSIT_MASTER")],
+         "sql": (
+             "SELECT COALESCE(RATE_TYPE, 'NA') AS RATE_TYPE, SUM(AMOUNT) AS POSITION_AMOUNT, "
+             "ROUND(AVG(SPREAD_BPS), 2) AS AVG_SPREAD_BPS, "
+             "ROUND(SUM(AMOUNT) * AVG(COALESCE(SPREAD_BPS, 0)) / 10000 * 0.02, 2) AS EAR_200BPS, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.DEPOSIT_MASTER GROUP BY 1"
+         )},
+        {"schema": "RPT_ALM", "name": "ECONOMIC_VALUE_EQUITY",
+         "requires": [("c", "INVESTMENT_PORTFOLIO")],
+         "sql": (
+             "SELECT COALESCE(RATE_TYPE, 'NA') AS RATE_TYPE, COUNT(*) AS SECURITIES, "
+             "SUM(MARKET_VALUE) AS MARKET_VALUE, "
+             "ROUND(AVG(MODIFIED_DURATION), 4) AS AVG_DURATION, "
+             "ROUND(-1 * SUM(MARKET_VALUE) * AVG(COALESCE(MODIFIED_DURATION, 0)) * 0.02, 2) AS EVE_200BPS, "
+             "CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.INVESTMENT_PORTFOLIO GROUP BY 1"
+         )},
+        {"schema": "RPT_ALM", "name": "CPR_CUSTOMER_PROFILE",
+         "requires": [("c", "CMG_EXT"), ("h", "GAM")],
+         "sql": (
+             "SELECT COALESCE(e.OCCUPATION_CODE, 'NA') AS SEGMENT, "
+             "COUNT(DISTINCT e.CUST_ID) AS CUSTOMERS, SUM(g.CLR_BAL_AMT) AS TOTAL_BALANCE, "
+             "ROUND(AVG(g.CLR_BAL_AMT), 2) AS AVG_BALANCE, "
+             "SUM(IFF(g.SANCT_LIM > 0, 1, 0)) AS CREDIT_CUSTOMERS, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.CMG_EXT e JOIN {h}.GAM g ON g.CUST_ID = e.CUST_ID GROUP BY 1"
+         )},
+        # ---- UPI / cards extended (2) --------------------------------------
+        {"schema": "RPT_UPI", "name": "UPI_TD_VS_BD",
+         "requires": [("star", "FACT_UPI")],
+         "sql": (
+             "SELECT TXN_TYPE, COUNT(*) AS TXNS, SUM(AMOUNT) AS TOTAL_AMOUNT, "
+             "SUM(SETTLEMENT_AMOUNT) AS SETTLED_AMOUNT, "
+             "SUM(IFF(FRAUD_FLAG, 1, 0)) AS FRAUD_TXNS, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {star}.FACT_UPI GROUP BY 1"
+         )},
+        {"schema": "RPT_UPI", "name": "MERCHANT_FRAUD_ALERT",
+         "requires": [("c", "UPI_MERCHANT")],
+         "sql": (
+             "SELECT COALESCE(RISK_CATEGORY, 'NA') AS RISK_CATEGORY, COUNT(*) AS MERCHANTS, "
+             "ROUND(AVG(FRAUD_SCORE), 2) AS AVG_FRAUD_SCORE, "
+             "SUM(CHARGEBACK_COUNT) AS CHARGEBACKS, CURRENT_TIMESTAMP() AS BUILT_AT "
+             f"FROM {c}.UPI_MERCHANT GROUP BY 1"
          )},
     ]
 

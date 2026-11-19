@@ -79,6 +79,9 @@ EXTENSION_TABLES: List[Dict[str, Any]] = [
         ("RISK_SCORE", "INT64"), ("RISK_REVIEW_DATE", "DATE"), ("SOURCE_OF_FUNDS", "STRING"),
         ("TIN", "STRING"), ("TAX_RESIDENCY", "STRING"), ("FATCA_STATUS", "STRING"),
         ("CRS_STATUS", "STRING"), ("US_PERSON_FLAG", "BOOL"),
+        ("PEP_CATEGORY", "STRING"), ("PEP_SOURCE", "STRING"), ("ENTITY_TYPE", "STRING"),
+        ("INCORPORATION_DATE", "DATE"), ("IS_ACTIVE_ENTITY", "BOOL"),
+        ("LAST_FILING_DATE", "DATE"), ("GST_NO", "STRING"),
     ], "CUST_ID", scd=True, fks={"CUST_ID": ("CMG", "CUST_ID")}),
     _spec("GAM_EXT", "dim", [
         ("ACID", "STRING"), ("PRODUCT_CODE", "STRING"), ("MATURITY_DATE", "DATE"),
@@ -86,6 +89,7 @@ EXTENSION_TABLES: List[Dict[str, Any]] = [
         ("LAST_CREDIT_DATE", "DATE"), ("LAST_DEBIT_DATE", "DATE"),
         ("DORMANT_FLAG", "BOOL"), ("ONBOARDING_CHANNEL", "STRING"),
         ("DIGITAL_SIGN_FLAG", "BOOL"), ("STAFF_FLAG", "BOOL"), ("HOLD_FLAG", "BOOL"),
+        ("OPENING_DATE", "DATE"), ("ACCT_CLOSE_DATE", "DATE"),
     ], "ACID", scd=True, fks={"ACID": ("GAM", "ACID")}),
     _spec("HTD_EXT", "fact", [
         ("TRAN_ID", "STRING"), ("DR_CR_FLAG", "STRING"), ("TRAN_MODE", "STRING"),
@@ -95,7 +99,10 @@ EXTENSION_TABLES: List[Dict[str, Any]] = [
         ("TXN_CITY", "STRING"), ("PURPOSE_CODE", "STRING"), ("NARRATION", "STRING"),
         ("ORIGINATOR_CUST_ID", "STRING"), ("BENEFICIARY_CUST_ID", "STRING"),
         ("DEVICE_ID", "STRING"), ("IP_HASH", "STRING"),
-    ], "TRAN_ID", fks={"TRAN_ID": ("HTD", "TRAN_ID"), "ORIGINATOR_CUST_ID": ("CMG", "CUST_ID")}),
+        ("DEPOSITOR_CUST_ID", "STRING"), ("STRUCTURING_FLAG", "BOOL"),
+        ("RAPID_MOVEMENT_FLAG", "BOOL"),
+    ], "TRAN_ID", fks={"TRAN_ID": ("HTD", "TRAN_ID"), "ORIGINATOR_CUST_ID": ("CMG", "CUST_ID"),
+                       "DEPOSITOR_CUST_ID": ("CMG", "CUST_ID")}),
     _spec("TAM_LAM_EXT", "fact", [
         ("CONTRACT_ID", "STRING"), ("BORROWER_ID", "STRING"), ("SANCTIONED_AMT", "NUMERIC(18,2)"),
         ("SANCTION_DATE", "DATE"), ("FUND_BASED_FLAG", "BOOL"), ("FACILITY_TYPE", "STRING"),
@@ -107,6 +114,8 @@ EXTENSION_TABLES: List[Dict[str, Any]] = [
         ("WRITE_OFF_AMT", "NUMERIC(18,2)"), ("WRITE_OFF_DATE", "DATE"),
         ("BORROWER_PAN_MASKED", "STRING"), ("GROUP_ID", "STRING"),
         ("MODIFIED_DURATION", "FLOAT64"),
+        ("FORECLOSURE_DATE", "DATE"), ("FORECLOSURE_AMT", "NUMERIC(18,2)"),
+        ("PREPAYMENT_PENALTY", "NUMERIC(18,2)"),
     ], "CONTRACT_ID", fks={
         "CONTRACT_ID": ("TAM_LAM", "CONTRACT_ID"), "BORROWER_ID": ("BORROWER_ENTITY", "BORROWER_ID"),
         "INDUSTRY_CODE": ("INDUSTRY_SECTOR_MASTER", "INDUSTRY_CODE"),
@@ -178,6 +187,8 @@ CREDIT_TABLES: List[Dict[str, Any]] = [
         ("LIMIT_EXPIRY_DATE", "DATE"), ("INTEREST_TYPE", "STRING"),
         ("INTEREST_RATE", "FLOAT64"), ("REPAYMENT_FREQ", "STRING"),
         ("MORATORIUM_END_DATE", "DATE"),
+        ("DRAWN_AMT", "NUMERIC(18,2)"), ("GUARANTEE_COVER", "BOOL"),
+        ("NPA_FLAG", "BOOL"),
     ], "FACILITY_ID", fks={
         "CONTRACT_ID": ("TAM_LAM", "CONTRACT_ID"),
         "BORROWER_ID": ("BORROWER_ENTITY", "BORROWER_ID"),
@@ -214,6 +225,11 @@ ALM_TABLES: List[Dict[str, Any]] = [
         ("INTEREST_RATE", "FLOAT64"), ("START_DATE", "DATE"), ("MATURITY_DATE", "DATE"),
         ("REPRICING_FREQ", "STRING"), ("PREMATURE_WD_FLAG", "BOOL"),
         ("AUTO_RENEW_FLAG", "BOOL"), ("BUCKET", "STRING"),
+        ("RESIDUAL_MATURITY_DAYS", "INT64"), ("RATE_TYPE", "STRING"),
+        ("BENCHMARK", "STRING"), ("SPREAD_BPS", "FLOAT64"),
+        ("INTEREST_PAID", "NUMERIC(18,2)"), ("INSURED_FLAG", "BOOL"),
+        ("CUSTOMER_SEGMENT", "STRING"), ("AS_OF_DATE", "DATE"),
+        ("NOMINAL_RATE", "FLOAT64"), ("EFFECTIVE_RATE", "FLOAT64"),
     ], "DEPOSIT_ID", fks={
         "ACID": ("GAM", "ACID"), "CUST_ID": ("CMG", "CUST_ID"),
         "PRODUCT_CODE": ("PRODUCT_MASTER", "PRODUCT_CODE"),
@@ -223,6 +239,8 @@ ALM_TABLES: List[Dict[str, Any]] = [
         ("COUNTERPARTY", "STRING"), ("AMOUNT", "NUMERIC(18,2)"),
         ("INTEREST_RATE", "FLOAT64"), ("START_DATE", "DATE"), ("MATURITY_DATE", "DATE"),
         ("REPRICING_DATE", "DATE"), ("CALL_PUT_FLAG", "BOOL"),
+        ("RATE_TYPE", "STRING"), ("BENCHMARK", "STRING"),
+        ("RESIDUAL_MATURITY_DAYS", "INT64"), ("SPREAD_BPS", "FLOAT64"),
     ], "BORROWING_ID"),
     _spec("INVESTMENT_PORTFOLIO", "dim", [
         ("INVEST_ID", "STRING"), ("ISIN", "STRING"), ("SECURITY_TYPE", "STRING"),
@@ -231,6 +249,8 @@ ALM_TABLES: List[Dict[str, Any]] = [
         ("MATURITY_DATE", "DATE"), ("RATING", "STRING"), ("HTM_AFS_HFT", "STRING"),
         ("YIELD_PCT", "FLOAT64"), ("ACCRUED_INT", "NUMERIC(18,2)"),
         ("REPRICING_DATE", "DATE"), ("MODIFIED_DURATION", "FLOAT64"),
+        ("RESIDUAL_MATURITY_DAYS", "INT64"), ("RATE_TYPE", "STRING"),
+        ("HQLA_CLASS", "STRING"),
     ], "INVEST_ID"),
     _spec("TREASURY_DEAL", "fact", [
         ("DEAL_ID", "STRING"), ("DEAL_DATE", "DATE"), ("DEAL_TYPE", "STRING"),
@@ -275,6 +295,49 @@ CARD_TABLES: List[Dict[str, Any]] = [
         ("STATUS", "STRING"), ("DAILY_LIMIT", "NUMERIC(18,2)"),
         ("CONTACTLESS_FLAG", "BOOL"),
     ], "CARD_ID", scd=True, fks={"ACID": ("GAM", "ACID"), "CUST_ID": ("CMG", "CUST_ID")}),
+    _spec("CREDIT_CARD_MASTER", "dim", [
+        ("CARD_ID", "STRING"), ("CUST_ID", "STRING"), ("ACID", "STRING"),
+        ("CARD_TYPE", "STRING"), ("NETWORK", "STRING"), ("BIN", "STRING"),
+        ("MASKED_PAN", "STRING"), ("CREDIT_LIMIT", "NUMERIC(18,2)"),
+        ("ISSUE_DATE", "DATE"), ("EXPIRY_DATE", "DATE"), ("STATUS", "STRING"),
+        ("INTEREST_RATE", "FLOAT64"), ("CONTACTLESS_FLAG", "BOOL"),
+    ], "CARD_ID", scd=True, source="sftp", partner="CARDNET",
+        fks={"ACID": ("GAM", "ACID"), "CUST_ID": ("CMG", "CUST_ID")}),
+    _spec("CREDIT_CARD_TRANSACTION", "fact", [
+        ("CARD_TXN_ID", "STRING"), ("CARD_ID", "STRING"), ("TXN_DATE", "DATE"),
+        ("MERCHANT_NAME", "STRING"), ("MCC", "STRING"), ("AMOUNT", "NUMERIC(18,2)"),
+        ("INR_AMOUNT", "NUMERIC(18,2)"), ("CCY", "STRING"), ("AUTH_CODE", "STRING"),
+        ("RESPONSE_CODE", "STRING"), ("CHANNEL", "STRING"), ("SETTLEMENT_DATE", "DATE"),
+        ("DISPUTE_FLAG", "BOOL"), ("FOREIGN_FLAG", "BOOL"), ("COUNTRY", "STRING"),
+    ], "CARD_TXN_ID", source="sftp", partner="CARDNET",
+        fks={"CARD_ID": ("CREDIT_CARD_MASTER", "CARD_ID"), "MCC": ("MCC_MASTER", "MCC")}),
+    _spec("CREDIT_CARD_STATEMENT", "fact", [
+        ("STATEMENT_ID", "STRING"), ("CARD_ID", "STRING"), ("STATEMENT_DATE", "DATE"),
+        ("DUE_DATE", "DATE"), ("TOTAL_DUE", "NUMERIC(18,2)"), ("MIN_DUE", "NUMERIC(18,2)"),
+        ("PAYMENT_RECEIVED", "NUMERIC(18,2)"), ("DAYS_PAST_DUE", "INT64"),
+        ("BUCKET", "STRING"), ("WRITTEN_OFF_FLAG", "BOOL"),
+    ], "STATEMENT_ID", source="sftp", partner="CARDNET",
+        fks={"CARD_ID": ("CREDIT_CARD_MASTER", "CARD_ID")}),
+]
+
+# ---------------------------------------------------------------------------
+# Cash / currency-chest feeds (counterfeit detection, walk-in cash capture)
+# ---------------------------------------------------------------------------
+CASH_TABLES: List[Dict[str, Any]] = [
+    _spec("COUNTERFEIT_INCIDENT", "fact", [
+        ("INCIDENT_ID", "STRING"), ("SOL_ID", "STRING"), ("TXN_DATE", "DATE"),
+        ("CI_AMOUNT", "NUMERIC(18,2)"), ("FAKE_NOTE_COUNT", "INT64"),
+        ("DENOMINATION", "STRING"), ("SOURCE_CHANNEL", "STRING"),
+        ("RECOVERED_FLAG", "BOOL"), ("REPORTED_TO_POLICE", "BOOL"), ("STATUS", "STRING"),
+    ], "INCIDENT_ID", source="sftp", partner="CASH",
+        fks={"SOL_ID": ("SOL", "SOL_ID")}),
+    _spec("WALK_IN_CASH_TXN", "fact", [
+        ("TXN_ID", "STRING"), ("SOL_ID", "STRING"), ("CUST_ID", "STRING"),
+        ("TXN_DATE", "DATE"), ("TXN_TYPE", "STRING"), ("AMOUNT", "NUMERIC(18,2)"),
+        ("PAN_CAPTURED", "BOOL"), ("FORM60", "BOOL"), ("DEPOSITOR_NAME", "STRING"),
+        ("STATUS", "STRING"),
+    ], "TXN_ID", source="sftp", partner="CASH",
+        fks={"SOL_ID": ("SOL", "SOL_ID"), "CUST_ID": ("CMG", "CUST_ID")}),
 ]
 
 TRADE_TABLES: List[Dict[str, Any]] = [
@@ -283,6 +346,8 @@ TRADE_TABLES: List[Dict[str, Any]] = [
         ("COUNTERPARTY_COUNTRY", "STRING"), ("AMOUNT", "NUMERIC(18,2)"),
         ("CCY", "STRING"), ("INR_AMOUNT", "NUMERIC(18,2)"), ("ISSUE_DATE", "DATE"),
         ("EXPIRY_DATE", "DATE"), ("STATUS", "STRING"), ("PURPOSE_CODE", "STRING"),
+        ("UNIT_PRICE", "NUMERIC(18,2)"), ("MARKET_PRICE", "NUMERIC(18,2)"),
+        ("HS_CODE", "STRING"), ("DISCREPANCY_FLAG", "BOOL"),
     ], "DOC_ID", fks={"CUST_ID": ("CMG", "CUST_ID")}),
     _spec("NOSTRO_ACCOUNT", "fact", [
         ("NOSTRO_ID", "STRING"), ("CCY", "STRING"), ("BANK_BIC", "STRING"),
@@ -391,14 +456,16 @@ SFTP_TABLES: List[Dict[str, Any]] = [
         ("AMOUNT", "NUMERIC(18,2)"), ("MCC", "STRING"), ("TXN_TYPE", "STRING"),
         ("STATUS", "STRING"), ("RESPONSE_CODE", "STRING"), ("INITIATION_MODE", "STRING"),
         ("TXN_DATE", "DATE"), ("SETTLEMENT_DATE", "DATE"), ("NPCI_REF", "STRING"),
-        ("DISPUTE_FLAG", "BOOL"),
+        ("DISPUTE_FLAG", "BOOL"), ("FRAUD_FLAG", "BOOL"),
+        ("SETTLEMENT_AMOUNT", "NUMERIC(18,2)"),
     ], "UPI_TXN_ID", source="sftp", partner="NPCI", fks={
         "PAYER_ACID": ("GAM", "ACID"), "MCC": ("MCC_MASTER", "MCC"),
     }),
     _spec("UPI_MERCHANT", "dim", [
         ("MERCHANT_ID", "STRING"), ("MERCHANT_NAME", "STRING"), ("MCC", "STRING"),
         ("VPA", "STRING"), ("ONBOARDED_DATE", "DATE"), ("STATUS", "STRING"),
-        ("RISK_CATEGORY", "STRING"),
+        ("RISK_CATEGORY", "STRING"), ("FRAUD_SCORE", "INT64"),
+        ("CHARGEBACK_COUNT", "INT64"),
     ], "MERCHANT_ID", scd=True, source="sftp", partner="NPCI",
         fks={"MCC": ("MCC_MASTER", "MCC")}),
     _spec("UPI_DISPUTE", "fact", [
@@ -441,7 +508,7 @@ SFTP_TABLES: List[Dict[str, Any]] = [
 
 NEW_TABLES: List[Dict[str, Any]] = (
     EXTENSION_TABLES + KYC_TABLES + CREDIT_TABLES + ALM_TABLES +
-    CARD_TABLES + TRADE_TABLES + AML_TABLES + REF_TABLES + SFTP_TABLES
+    CARD_TABLES + CASH_TABLES + TRADE_TABLES + AML_TABLES + REF_TABLES + SFTP_TABLES
 )
 
 _TABLE_INDEX: Dict[str, Dict[str, Any]] = {spec["table"]: spec for spec in NEW_TABLES}

@@ -108,6 +108,11 @@ def _slug(value: str) -> str:
 # 20261119.csv) so the warehouse and the source model share one name.
 CANONICAL_TABLES = (
     "DEBIT_CARD_TRANSACTION",
+    "CREDIT_CARD_MASTER",
+    "CREDIT_CARD_TRANSACTION",
+    "CREDIT_CARD_STATEMENT",
+    "COUNTERFEIT_INCIDENT",
+    "WALK_IN_CASH_TXN",
     "UPI_TRANSACTION",
     "UPI_SETTLEMENT",
     "UPI_MERCHANT",
