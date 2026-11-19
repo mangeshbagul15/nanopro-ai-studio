@@ -637,15 +637,42 @@ def generate_and_publish_packages(cycle: str = "MANUAL", business_date: str = ""
 
     master_size = os.path.getsize(master_local_path)
 
-    # 3. Domain Package CSV Files
+    # 3. Domain Package Files (Both separate Excel workbooks & CSV files)
     domain_files = []
+    domain_excels = []
     domain_mappings = {
         "AML_FIU": [k for k in reports if k.startswith("AML_")],
         "RBI_ADF_CIMS": [k for k in reports if k.startswith("RBI_")],
         "ALM_LIQUIDITY": [k for k in reports if k.startswith("ALM_")],
         "UPI_DIGITAL": [k for k in reports if k.startswith("UPI_") or k.startswith("Card_") or k.startswith("ATM_") or k.startswith("Merchant_")],
     }
+    domain_titles = {
+        "AML_FIU": "AML_FIU_IND_21_Reports",
+        "RBI_ADF_CIMS": "RBI_ADF_CIMS_10_Reports",
+        "ALM_LIQUIDITY": "ALM_Liquidity_7_Reports",
+        "UPI_DIGITAL": "UPI_Digital_Banking_6_Reports",
+    }
     for dom_prefix, report_keys in domain_mappings.items():
+        title_suffix = domain_titles.get(dom_prefix, dom_prefix)
+        # 3a. Separate Domain Excel Workbook
+        excel_filename = f"NANOPRO_{title_suffix}_{bdate.replace('-', '')}_{stamp}.xlsx"
+        excel_local_path = os.path.join(OUTBOUND_DIR, excel_filename)
+        with pd.ExcelWriter(excel_local_path, engine="openpyxl") as d_writer:
+            exec_summary.to_excel(d_writer, sheet_name="Summary", index=False)
+            for k in report_keys:
+                df = reports[k]
+                sheet_title = k[:31]
+                df.to_excel(d_writer, sheet_name=sheet_title, index=False)
+        domain_excels.append({
+            "name": dom_prefix,
+            "filename": excel_filename,
+            "local_path": excel_local_path,
+            "bytes": os.path.getsize(excel_local_path),
+            "sftp_path": f"/sftp/outbound/reports/{excel_filename}",
+            "download_url": f"/api/banking/orchestrator/report/download?filename={excel_filename}",
+        })
+
+        # 3b. Domain CSV file
         csv_filename = f"NANOPRO_{dom_prefix}_{bdate.replace('-', '')}_{stamp}.csv"
         csv_local_path = os.path.join(OUTBOUND_DIR, csv_filename)
         with open(csv_local_path, "w", encoding="utf-8", newline="") as f:
@@ -687,7 +714,18 @@ def generate_and_publish_packages(cycle: str = "MANUAL", business_date: str = ""
         except Exception:
             download_url = ""
 
-        # Also upload the CSV packages
+        # Also upload the separate Domain Excel and CSV packages
+        for de_item in domain_excels:
+            try:
+                with open(de_item["local_path"], "rb") as ef:
+                    s3_client.put_object(
+                        Bucket=bucket_name,
+                        Key=f"sftp/outbound/reports/{de_item['filename']}",
+                        Body=ef.read(),
+                        ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
+            except Exception:
+                pass
         for df_item in domain_files:
             try:
                 with open(df_item["local_path"], "rb") as cf:
@@ -714,6 +752,7 @@ def generate_and_publish_packages(cycle: str = "MANUAL", business_date: str = ""
         "bytes": master_size,
         "size_mb": round(master_size / (1024 * 1024), 2),
         "total_reports": len(reports),
+        "domain_excels": domain_excels,
         "domain_csvs": domain_files,
         "summary": {
             "aml_count": len(domain_mappings["AML_FIU"]),

@@ -3658,12 +3658,12 @@ body.in-global_ai_lab .nano-dynamic-island {
       <!-- ENGINE FILTER BAR (Google BigQuery, AWS S3/Glue, Snowflake L0-L2, DuckDB, Reports) -->
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">
         <span style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-right:4px;">Engine Filter:</span>
-        <button type="button" class="ailab-pill is-active" id="dagFilterAll" onclick="ailabOrchFilterEngine('all')">&#9889; All (12)</button>
+        <button type="button" class="ailab-pill is-active" id="dagFilterAll" onclick="ailabOrchFilterEngine('all')">&#9889; All (15)</button>
         <button type="button" class="ailab-pill" id="dagFilterBigquery" onclick="ailabOrchFilterEngine('bigquery')">&#9729;&#65039; Google BigQuery (1)</button>
         <button type="button" class="ailab-pill" id="dagFilterAws" onclick="ailabOrchFilterEngine('aws')">&#128312; AWS S3 / Glue (2)</button>
         <button type="button" class="ailab-pill" id="dagFilterSnowflake" onclick="ailabOrchFilterEngine('snowflake')">&#10052;&#65039; Snowflake L0-L2 (6)</button>
         <button type="button" class="ailab-pill" id="dagFilterDuckdb" onclick="ailabOrchFilterEngine('duckdb')">&#129414; DuckDB (1)</button>
-        <button type="button" class="ailab-pill" id="dagFilterReports" onclick="ailabOrchFilterEngine('reports')">&#128202; Reports &amp; Alerts (2)</button>
+        <button type="button" class="ailab-pill" id="dagFilterReports" onclick="ailabOrchFilterEngine('reports')">&#128202; Reports &amp; Alerts (5)</button>
       </div>
 
       <div id="airflowDagsList" style="display:flex;flex-direction:column;gap:10px;">
@@ -8675,9 +8675,12 @@ body.in-global_ai_lab .nano-dynamic-island {
   // Native alert/confirm/prompt are suppressed in embedded/iframe browsers, so the
   // orchestrator uses its own dialog and toast instead.
   function orchDialog(message, defaultValue) {
+    const prev = document.getElementById("orchDialogWrap");
+    if (prev) prev.remove();
     return new Promise(resolve => {
       const isPrompt = defaultValue !== undefined;
       const wrap = document.createElement("div");
+      wrap.id = "orchDialogWrap";
       wrap.style.cssText = "position:fixed;inset:0;z-index:30050;background:rgba(2,6,23,0.72);display:flex;align-items:center;justify-content:center;padding:18px;";
       wrap.innerHTML = `
         <div style="width:min(440px,92vw);background:#0F172A;border:1px solid rgba(56,189,248,0.35);border-radius:12px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,0.55);">
@@ -8899,21 +8902,72 @@ body.in-global_ai_lab .nano-dynamic-island {
       </div>`;
   };
 
+  window.ailabOrchCurrentEngine = "all";
+
+  function orchDagEngine(id) {
+    if (id === "bq_to_s3") return "bigquery";
+    if (id === "sftp_to_s3" || id === "glue_catalog") return "aws";
+    if (id.startsWith("snowflake_") || id.startsWith("bank_l") || id === "bank_raw_history") return "snowflake";
+    if (id === "duckdb_report") return "duckdb";
+    return "reports";
+  }
+
+  function orchEngineBadge(eng) {
+    const b = {
+      bigquery: ["rgba(56,189,248,0.15)", "#38BDF8", "&#9729;&#65039; BigQuery"],
+      aws: ["rgba(251,146,60,0.15)", "#FB923C", "&#128312; AWS S3/Glue"],
+      snowflake: ["rgba(147,197,253,0.15)", "#93C5FD", "&#10052;&#65039; Snowflake"],
+      duckdb: ["rgba(234,179,8,0.15)", "#EAB308", "&#129414; DuckDB"],
+      reports: ["rgba(52,211,153,0.15)", "#34D399", "&#128202; Report Mart"],
+    }[eng] || ["rgba(148,163,184,0.15)", "#94A3B8", eng];
+    return `<span style="background:${b[0]};color:${b[1]};font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:4px;border:1px solid ${b[0]};">${b[2]}</span>`;
+  }
+
+  window.ailabOrchFilterEngine = function(engine) {
+    window.ailabOrchCurrentEngine = engine || "all";
+    const pillMap = {
+      all: "dagFilterAll",
+      bigquery: "dagFilterBigquery",
+      aws: "dagFilterAws",
+      snowflake: "dagFilterSnowflake",
+      duckdb: "dagFilterDuckdb",
+      reports: "dagFilterReports",
+    };
+    Object.entries(pillMap).forEach(([k, id]) => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (k === window.ailabOrchCurrentEngine) el.classList.add("is-active");
+        else el.classList.remove("is-active");
+      }
+    });
+    if (window.ailabOrchState && window.ailabOrchState.overview) {
+      ailabOrchRenderDags(window.ailabOrchState.overview);
+    }
+  };
+
   window.ailabOrchRenderDags = function(data) {
     const box = document.getElementById("airflowDagsList");
     if (!box) return;
-    const dags = data.dags || [];
+    window.ailabOrchState = window.ailabOrchState || {};
+    window.ailabOrchState.overview = data;
+    const allDags = data.dags || [];
     const countTab = document.getElementById("orchDagCountTab");
-    if (countTab) countTab.textContent = `${dags.length} DAG${dags.length === 1 ? "" : "s"}`;
-    if (!dags.length) {
+    if (countTab) countTab.textContent = `${allDags.length} DAG${allDags.length === 1 ? "" : "s"}`;
+    if (!allDags.length) {
       box.innerHTML = `<div style="text-align:center;padding:20px;color:#94A3B8;">No DAGs reported.</div>`;
       return;
     }
+    const curEngine = window.ailabOrchCurrentEngine || "all";
+    const dags = curEngine === "all" ? allDags : allDags.filter(d => orchDagEngine(d.id) === curEngine);
+    if (!dags.length) {
+      box.innerHTML = `<div style="text-align:center;padding:24px;color:#94A3B8;">No DAGs found for engine <strong>${orchEsc(curEngine)}</strong>. <button type="button" class="ailab-code-btn" onclick="ailabOrchFilterEngine('all')" style="margin-left:8px;color:#38BDF8;">Show all (${allDags.length})</button></div>`;
+      return;
+    }
     const cycles = (data.cycles || {}).cycles || [];
-    const schedules = data.cycle_schedules || {};
 
     box.innerHTML = dags.map(dag => {
       const [stageBg, stageFg] = orchStageColor(dag.stage);
+      const engBadge = orchEngineBadge(orchDagEngine(dag.id));
       const metrics = [];
       if (dag.tables != null && dag.tables !== "") metrics.push(`<span style="color:#94A3B8;">tables</span> <strong style="color:#F8FAFC;">${orchEsc(dag.tables)}</strong>`);
       if (dag.rows != null && dag.rows !== "") metrics.push(`<span style="color:#94A3B8;">rows</span> <strong style="color:#F8FAFC;">${orchNum(dag.rows)}</strong>`);
@@ -8930,15 +8984,16 @@ body.in-global_ai_lab .nano-dynamic-island {
         </div>` : "";
 
       return `
-        <div style="background:rgba(15,23,42,0.9);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;">
+        <div style="background:rgba(15,23,42,0.9);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;transition:border-color 0.15s ease;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
-            <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap;">
               <span style="background:${stageBg};color:${stageFg};font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:4px;">${orchEsc(dag.stage)}</span>
+              ${engBadge}
               <span style="font-weight:800;color:#F8FAFC;font-size:13px;">${orchEsc(dag.name)}</span>
               <code style="font-size:10px;color:#64748B;">${orchEsc(dag.id)}</code>
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
-              ${dag.in_flight ? `<span style="font-size:10px;color:#38BDF8;">running...</span>` : ""}
+              ${dag.in_flight ? `<span style="font-size:10px;color:#38BDF8;font-weight:700;">&#8635; running...</span>` : ""}
               ${orchBadge(dag.status)}
             </div>
           </div>
@@ -8950,15 +9005,21 @@ body.in-global_ai_lab .nano-dynamic-island {
           <div style="font-size:10.5px;color:#64748B;margin-bottom:8px;">Schedule: ${orchEsc(dag.schedule)}${dag.finished_at ? ` &bull; finished ${orchEsc(dag.finished_at)}` : ""}</div>
           ${cycleStrip}
           <div style="display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.06);padding-top:8px;margin-top:8px;">
-            <button type="button" class="ailab-code-btn" onclick="ailabOrchRun('${orchEsc(dag.id)}')" style="font-size:11px;color:#34D399;border-color:rgba(16,185,129,0.4);">&#9654; ${dag.id === "alerts" ? "Send summary" : "Run now"}</button>
-            <button type="button" class="ailab-code-btn" onclick="ailabOrchPause('${orchEsc(dag.id)}')" style="font-size:11px;color:${dag.paused ? "#34D399" : "#FBBF24"};border-color:rgba(255,255,255,0.2);">${dag.paused ? "&#9654; Resume" : "&#10074;&#10074; Pause"}</button>
-            ${dag.id === "alerts" ? "" : `<button type="button" class="ailab-code-btn" onclick="ailabOrchRollback('${orchEsc(dag.id)}')" style="font-size:11px;color:#F87171;border-color:rgba(248,113,113,0.4);">&#9198; Rollback</button>`}
+            <button type="button" class="ailab-code-btn" onclick="ailabOrchRun('${orchEsc(dag.id)}', this)" style="font-size:11px;color:#34D399;border-color:rgba(16,185,129,0.4);">&#9654; ${dag.id === "alerts" ? "Send summary" : "Run now"}</button>
+            <button type="button" class="ailab-code-btn" onclick="ailabOrchPause('${orchEsc(dag.id)}', this)" style="font-size:11px;color:${dag.paused ? "#34D399" : "#FBBF24"};border-color:rgba(255,255,255,0.2);">${dag.paused ? "&#9654; Resume" : "&#10074;&#10074; Pause"}</button>
+            ${dag.id === "alerts" ? "" : `<button type="button" class="ailab-code-btn" onclick="ailabOrchRollback('${orchEsc(dag.id)}', this)" style="font-size:11px;color:#F87171;border-color:rgba(248,113,113,0.4);">&#9198; Rollback</button>`}
           </div>
         </div>`;
     }).join("");
   };
 
-  window.ailabOrchRun = async function(dagId) {
+  window.ailabOrchRun = async function(dagId, btnEl) {
+    if (btnEl) {
+      if (btnEl.disabled) return;
+      btnEl.disabled = true;
+      btnEl.dataset.origText = btnEl.innerHTML;
+      btnEl.innerHTML = `<span style="display:inline-block;width:9px;height:9px;border:2px solid #34D399;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:4px;"></span> Running...`;
+    }
     ailabOrchToast(`Dispatching ${dagId}...`, "#38BDF8");
     try {
       const res = await ailabAuthFetch(ORCH_API + "/dag/run", {
@@ -8970,11 +9031,24 @@ body.in-global_ai_lab .nano-dynamic-island {
       const footer = document.getElementById("airflowFooterLeft");
       if (footer) footer.textContent = data.message || "Dispatched";
       ailabOrchToast(data.message || `${dagId} dispatched`, data.status === "dispatched" ? "#34D399" : "#FBBF24");
-      setTimeout(() => ailabOrchRefreshAll(true), 2000);
-    } catch (err) { ailabOrchToast("Run error: " + err.message, "#F87171"); }
+      setTimeout(() => ailabOrchRefreshAll(true), 1200);
+    } catch (err) {
+      ailabOrchToast("Run error: " + err.message, "#F87171");
+    } finally {
+      if (btnEl) {
+        btnEl.disabled = false;
+        if (btnEl.dataset.origText) btnEl.innerHTML = btnEl.dataset.origText;
+      }
+    }
   };
 
-  window.ailabOrchPause = async function(dagId) {
+  window.ailabOrchPause = async function(dagId, btnEl) {
+    if (btnEl) {
+      if (btnEl.disabled) return;
+      btnEl.disabled = true;
+      btnEl.dataset.origText = btnEl.innerHTML;
+      btnEl.innerHTML = `<span style="display:inline-block;width:9px;height:9px;border:2px solid #FBBF24;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;vertical-align:middle;margin-right:4px;"></span> Updating...`;
+    }
     try {
       const res = await ailabAuthFetch(ORCH_API + "/dag/pause", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -8984,7 +9058,14 @@ body.in-global_ai_lab .nano-dynamic-island {
       if (!res.ok) { ailabOrchToast(data.detail || "Pause failed", "#F87171"); return; }
       ailabOrchToast(`${dagId}: ${data.state || "updated"}`, data.state === "PAUSED" ? "#FBBF24" : "#34D399");
       await ailabOrchRefreshAll(true);
-    } catch (err) { ailabOrchToast("Pause error: " + err.message, "#F87171"); }
+    } catch (err) {
+      ailabOrchToast("Pause error: " + err.message, "#F87171");
+    } finally {
+      if (btnEl) {
+        btnEl.disabled = false;
+        if (btnEl.dataset.origText) btnEl.innerHTML = btnEl.dataset.origText;
+      }
+    }
   };
 
   window.ailabOrchRollback = async function(dagId) {
@@ -9076,14 +9157,23 @@ body.in-global_ai_lab .nano-dynamic-island {
     const box = document.getElementById("airflowSftpOutbound");
     if (!box) return;
     const reports = out.reports || [];
-    box.innerHTML = reports.length ? reports.map(item => `
-      <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(52,211,153,0.22);border-radius:7px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <div style="min-width:0;">
-          <div style="font-size:12px;font-weight:700;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${orchEsc(item.filename)}</div>
-          <div style="font-size:10.5px;color:#94A3B8;">${orchEsc(item.sftp_path)} &bull; ${orchEsc((item.bytes / 1024).toFixed(1))} KB &bull; ${orchEsc(item.modified || "")}</div>
-        </div>
-        ${item.download_url ? `<a href="${orchEsc(item.download_url)}" target="_blank" rel="noopener" class="ailab-code-btn" style="font-size:10.5px;color:#38BDF8;text-decoration:none;">Download</a>` : ""}
-      </div>`).join("") : `<div style="text-align:center;padding:12px;color:#94A3B8;">No reports published to sftp/outbound/reports yet.</div>`;
+    box.innerHTML = reports.length ? reports.map(item => {
+      const isXlsx = String(item.filename || "").endsWith(".xlsx");
+      const icon = isXlsx ? "&#128215; Excel" : "&#128196; CSV";
+      const badgeBg = isXlsx ? "rgba(16,185,129,0.18)" : "rgba(56,189,248,0.18)";
+      const badgeFg = isXlsx ? "#34D399" : "#38BDF8";
+      return `
+        <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(52,211,153,0.25);border-radius:8px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+          <div style="min-width:0;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="background:${badgeBg};color:${badgeFg};font-size:9.5px;font-weight:800;padding:2px 6px;border-radius:4px;">${icon}</span>
+              <div style="font-size:12px;font-weight:700;color:#F8FAFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${orchEsc(item.filename)}</div>
+            </div>
+            <div style="font-size:10.5px;color:#94A3B8;margin-top:3px;"><code>${orchEsc(item.sftp_path)}</code> &bull; ${orchEsc((item.bytes / 1024).toFixed(1))} KB ${item.modified ? `&bull; ${orchEsc(String(item.modified).slice(0, 19).replace('T', ' '))}` : ""}</div>
+          </div>
+          ${item.download_url ? `<a href="${orchEsc(item.download_url)}" target="_blank" rel="noopener" class="ailab-code-btn" style="font-size:11px;color:#38BDF8;text-decoration:none;font-weight:700;white-space:nowrap;">&#11015; Download</a>` : ""}
+        </div>`;
+    }).join("") : `<div style="text-align:center;padding:12px;color:#94A3B8;">No reports published to sftp/outbound/reports yet.</div>`;
   };
 
   window.ailabOrchBuildReport = async function(deliver) {

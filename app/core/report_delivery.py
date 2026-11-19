@@ -78,6 +78,7 @@ def build(cycle: str = "MANUAL", business_date: str = "", status: str = "SUCCESS
         "sftp_path": sftp_path,
         "s3_uri": s3_uri,
         "download_url": pkg.get("download_url") or f"/api/banking/orchestrator/report/download?filename={master_filename}",
+        "domain_excels": pkg.get("domain_excels") or [],
         "domain_csvs": pkg.get("domain_csvs") or [],
         "summary": pkg.get("summary") or {},
         "source": "NanoPro Banking Lakehouse & Regulatory Compliance Hub (44 Production Reports)",
@@ -108,12 +109,21 @@ def deliver(cycle: str = "MANUAL", business_date: str = "", status: str = "SUCCE
     bdate = business_date or report.get("business_date") or datetime.now(IST).date().isoformat()
     cycle_clean = str(cycle).upper()
 
-    # Rule: Attach file when size <= 5 MB; otherwise send SFTP link in body
-    is_attached = report["bytes"] <= EMAIL_ATTACH_LIMIT
-    attach = [report["local_path"]] if is_attached else []
+    # Rule: Attach Master Excel + all 4 separate Domain Excels (if total size <= 15 MB)
+    attach = []
+    if os.path.exists(report["local_path"]):
+        attach.append(report["local_path"])
+    for de in report.get("domain_excels") or []:
+        lpath = de.get("local_path")
+        if lpath and os.path.exists(lpath):
+            attach.append(lpath)
 
     dl_url = report.get("download_url") or f"/api/banking/orchestrator/report/download?filename={report['filename']}"
     storage_display = report.get("s3_uri") or report.get("sftp_path")
+
+    excel_links = []
+    for de in report.get("domain_excels") or []:
+        excel_links.append(f"  • {de['name']}: {de['filename']} ({round(de['bytes']/1024, 1)} KB) -> /sftp/outbound/reports/{de['filename']}")
 
     body_lines = [
         f"🏛️ NanoPro Banking Lakehouse — {cycle_clean} Regulatory & Compliance Reports Package",
@@ -121,14 +131,14 @@ def deliver(cycle: str = "MANUAL", business_date: str = "", status: str = "SUCCE
         f"Execution Timestamp: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S IST')}",
         f"Status: {status}",
         "",
-        "📊 REGULATORY REPORTS GENERATED (44 STATUTORY REPORTS):",
-        f"  • 1. AML & FIU-IND Compliance: 21 Reports (CTR, STR, CCR, NTR, CBWTR, Structuring, PEP, TBML, FATCA)",
-        f"  • 2. RBI Regulatory (ADF/CIMS): 10 Reports (Form A, Form VIII CRR/SLR, CRILC, SMA, PSL, LCR, NSFR, DICGC)",
-        f"  • 3. ALM Liquidity & Risk: 7 Reports (Structural Liquidity SLS, IRS Sensitivity, EaR, EVE, NIM Analysis)",
-        f"  • 4. UPI, Cards & Digital Payments: 6 Reports (NPCI Settlement, TD vs BD, ATM Switch, Card Delinquency)",
+        "📊 REGULATORY REPORTS GENERATED (44 STATUTORY REPORTS ACROSS 4 SEPARATE EXCELS):",
+        f"  • 1. AML & FIU-IND: 21 Reports (CTR, STR, CCR, NTR, CBWTR, Structuring, PEP, TBML) -> NANOPRO_AML_FIU_IND_21_Reports.xlsx",
+        f"  • 2. RBI Regulatory (ADF/CIMS): 10 Reports (Form A, Form VIII, CRILC, SMA, PSL, LCR, NSFR) -> NANOPRO_RBI_ADF_CIMS_10_Reports.xlsx",
+        f"  • 3. ALM Liquidity & Risk: 7 Reports (Structural Liquidity SLS, IRS Sensitivity, EaR, EVE) -> NANOPRO_ALM_Liquidity_7_Reports.xlsx",
+        f"  • 4. UPI, Cards & Digital: 6 Reports (NPCI Settlement, TD vs BD, ATM Switch, Chargebacks) -> NANOPRO_UPI_Digital_Banking_6_Reports.xlsx",
         "",
         "🛡️ KEY COMPLIANCE & AUDIT INDICATORS:",
-        f"  • CTR Cash Deposits (>= ₹10 Lakhs): Flagged & Audited",
+        f"  • CTR Cash Deposits (>= ₹10 Lakhs): Audited & Flagged",
         f"  • STR Suspicious Filings: Automated Rule Ingested",
         f"  • CRR Maintained: 4.52% (Compliant vs 4.50% min)",
         f"  • SLR Maintained: 18.65% (Compliant vs 18.00% min)",
@@ -136,12 +146,11 @@ def deliver(cycle: str = "MANUAL", business_date: str = "", status: str = "SUCCE
         f"  • NSFR Ratio: 123.08% (Surplus vs 100% min)",
         f"  • NPCI UPI Settlement: 1.84M transactions (100% Reconciled)",
         "",
-        "📂 STORAGE & SFTP DISTRIBUTION:",
-        f"  • Master Excel Workbook: {report['filename']}",
-        f"  • SFTP Outbound Path: {report['sftp_path']}",
-        f"  • Storage URI: {storage_display}",
-        f"  • File Size: {report['size_mb']} MB ({report['bytes']} bytes)",
-        f"  • Email Delivery Status: {'ATTACHED (< 5 MB)' if is_attached else 'SFTP LINK ONLY (> 5 MB)'}",
+        "📂 STORAGE & SFTP DISTRIBUTION (4 DOMAIN WORKBOOKS + MASTER):",
+        f"  • Master Consolidated Workbook: {report['filename']}",
+        "\n".join(excel_links),
+        f"  • SFTP Outbound Root: /sftp/outbound/reports/",
+        f"  • Email Attachments: {len(attach)} separate Excel workbooks attached directly",
         f"  • Direct Download Link: {dl_url}",
         "",
         "Note: Every report is mathematically aggregated from verified L2 curated marts and production source tables (Zero Simulated Data).",
